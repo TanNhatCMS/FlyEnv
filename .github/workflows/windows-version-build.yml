@@ -1,5 +1,6 @@
 name: Build FlyEnv Windows Packages
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'build/windows.build.yml'
