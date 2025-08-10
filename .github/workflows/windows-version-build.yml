@@ -21,9 +21,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+            python-version: 'latest'
+            architecture: 'x64'
+            cache: 'pip'
+
       - name: Install Electron build dependencies
         run: |
-          choco install python --version=3.12.4
           choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools"
           choco install make
           choco install 7zip
