@@ -53,7 +53,6 @@ jobs:
 
       - name: Init notarize.ts File
         run: |
-          mkdir -p build
           echo "export default async function notarizing() { return; }" > build/notarize.ts
 
       - name: Build Electron packages with electron-builder
