@@ -1,7 +1,7 @@
 import type { Configuration } from 'electron-builder'
 import PublishConfig from './publish'
 import AfterPack from '../build/afterPack'
-import Notarize from '../build/notarize'
+import { isMacOS } from '@shared/utils'
 /**
  * one environment
  * envlab
@@ -12,6 +12,17 @@ import Notarize from '../build/notarize'
  * DeployLab
  * One Environ
  */
+let Notarize
+try {
+  if (isMacOS()) {
+    console.log('packMain isMacOS !!!')
+    Notarize = (await import('../build/notarize')).default
+  }
+} catch (err) {
+  console.log('\nfailed to build main process')
+  console.error(`\n${err}\n`)
+  process.exit(1)
+}
 const conf: Configuration = {
   productName: 'FlyEnv',
   executableName: 'FlyEnv',
