@@ -1,39 +1,141 @@
-name: Release FlyEnv
+name: Build FlyEnv Packages (Linux / macOS / Windows)
 
 on:
   release:
     types: [published]
 
 jobs:
-  release:
-    name: Build ${{ matrix.os }}  (${{ matrix.arch }})
+  build:
+    name: Build (${{ matrix.os }} • ${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - arch: x64
-            os: windows-latest
+          # Linux
+          - os: ubuntu-24.04
+            arch: x64
             target: x64
-          - arch: x64
-            os: ubuntu-22.04
+          - os: ubuntu-22.04-arm
+            arch: arm64
+            target: arm64
+          # macOS
+          - os: macos-14
+            arch: arm64
+            target: arm64
+          - os: macos-13
+            arch: x64
             target: x64
+          # Windows
+          - os: windows-latest
+            arch: x64
+            target: x64
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Node.js, NPM and Yarn
+      - name: Setup Node.js (LTS)
         uses: actions/setup-node@v4
         with:
-          node-version: 'latest'
+          node-version: 'lts/*'
+          cache: 'yarn'
+          cache-dependency-path: |
+            **/yarn.lock
 
-      - name: Macro Electron Builder Action
-        uses: coparse-inc/action-electron-builder@v1.0.0
+      - name: Setup Go (stable)
+        uses: actions/setup-go@v4
         with:
-          # GitHub token, automatically provided to the action
-          # (No need to define this secret in the repo settings)
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          go-version: 'stable'
 
-          # If the commit is tagged with a version (e.g. "v1.0.0"),
-          # release the app after building
-          release: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      - name: Setup Python (for node-gyp)
+        if: runner.os == 'Windows'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build deps (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            g++ \
+            make \
+            python3 \
+            python3-pip \
+            pkg-config \
+            fakeroot \
+            rpm
+          python3 -m pip install --upgrade pip
+
+      - name: Install build deps (macOS)
+        if: runner.os == 'macOS'
+        run: brew update
+
+      - name: Install build deps (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install -y nsis
+          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools"
+          choco install make
+          choco install 7zip
+
+      - name: Cache node-gyp & yarn cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/node-gyp
+            ~/.yarn
+            .yarn/cache
+            node_modules
+            **/node_modules
+          key: ${{ runner.os }}-${{ matrix.arch }}-yarn-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install Yarn & tools
+        run: |
+          npm -g install yarn node-gyp
+          yarn --version
+          node -v
+          go version
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Init notarize.ts (no-op)
+        shell: bash
+        run: |
+          mkdir -p build
+          cat > build/notarize.ts << 'EOF'
+          export default async function notarizing() { return; }
+          EOF
+
+      - name: Build Go helper
+        if: runner.os != 'Windows'
+        shell: bash
+        working-directory: src/helper-go
+        run: |
+          chmod +x ./build-os.sh
+          ./build-os.sh
+
+      - name: Build Electron packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: yarn build
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release/*.deb
+            release/*.rpm
+            release/*.AppImage
+            release/*.tar.*
+            release/*.dmg
+            release/*.zip
+            release/*.pkg
+            release/*.exe
+            release/*.msi
+            release/*.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
