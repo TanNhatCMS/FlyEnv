@@ -36,13 +36,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js (LTS)
+      - name: Setup Latest Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
-          cache: 'yarn'
-          cache-dependency-path: |
-            **/yarn.lock
+          node-version: 'latest'
 
       - name: Setup Go (stable)
         uses: actions/setup-go@v4
