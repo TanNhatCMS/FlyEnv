@@ -22,13 +22,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-            python-version: 'latest'
-            architecture: 'x64'
-            cache: 'pip'
-
       - name: Install Electron build dependencies
         run: |
           choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools"
@@ -63,9 +56,14 @@ jobs:
         run: |
           echo "export default async function notarizing() { return; }" > build/notarize.ts
 
-      - name: Build Electron packages with electron-builder
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          yarn build
+      - name: Macro Electron Builder Action
+        uses: coparse-inc/action-electron-builder@v1.0.0
+        with:
+          # GitHub token, automatically provided to the action
+          # (No need to define this secret in the repo settings)
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+          # If the commit is tagged with a version (e.g. "v1.0.0"),
+          # release the app after building
+          release: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
