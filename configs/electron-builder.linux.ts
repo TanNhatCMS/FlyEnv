@@ -1,5 +1,6 @@
 import type { Configuration } from 'electron-builder'
 import AfterPack from '../build/afterPack'
+import PublishConfig from './publish'
 
 const desktop: any = {
   Name: 'FlyEnv',
@@ -58,7 +59,8 @@ const conf: Configuration = {
   },
   afterPack: (...args) => {
     return AfterPack(...args) as any
-  }
+  },
+  publish: [PublishConfig]
 }
 
 export default conf

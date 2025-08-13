@@ -1,7 +1,6 @@
 import type { Configuration } from 'electron-builder'
 import PublishConfig from './publish'
 import AfterPack from '../build/afterPack'
-import { isMacOS } from '@shared/utils'
 /**
  * one environment
  * envlab
@@ -12,17 +11,6 @@ import { isMacOS } from '@shared/utils'
  * DeployLab
  * One Environ
  */
-let Notarize
-try {
-  if (isMacOS()) {
-    console.log('packMain isMacOS !!!')
-    Notarize = (await import('../build/notarize')).default
-  }
-} catch (err) {
-  console.log('\nfailed to build main process')
-  console.error(`\n${err}\n`)
-  process.exit(1)
-}
 const conf: Configuration = {
   productName: 'FlyEnv',
   executableName: 'FlyEnv',
@@ -67,9 +55,7 @@ const conf: Configuration = {
     icon: 'build/Icon.icns',
     target: {
       target: 'default',
-      // target: 'pkg',
       arch: ['x64', 'arm64']
-      // arch: ['arm64']
     },
     asarUnpack: ['**/*.node'],
     extendInfo: {
@@ -87,9 +73,6 @@ const conf: Configuration = {
   },
   afterPack: (...args) => {
     return AfterPack(...args) as any
-  },
-  afterSign: (...args) => {
-    return Notarize(...args)
   },
   publish: [PublishConfig]
 }

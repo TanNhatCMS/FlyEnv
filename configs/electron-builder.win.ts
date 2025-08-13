@@ -1,4 +1,5 @@
 import type { Configuration } from 'electron-builder'
+import PublishConfig from "./publish";
 
 const conf: Configuration = {
   productName: 'FlyEnv',
@@ -43,7 +44,7 @@ const conf: Configuration = {
     artifactName: 'FlyEnv-Portable-${version}.${ext}',
     requestExecutionLevel: 'admin'
   },
-  publish: []
+  publish: [PublishConfig]
 }
 
 export default conf
