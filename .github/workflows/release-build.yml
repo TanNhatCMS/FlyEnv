@@ -96,8 +96,23 @@ jobs:
           node -v
           go version
 
+      - name: Check Go module files
+        working-directory: src/helper-go
+        run: |
+          if [ ! -f go.sum ]; then
+            echo "Warning: go.sum file is missing"
+            go mod tidy
+          fi
+          go mod verify
+
       - name: Install dependencies
         run: yarn install --frozen-lockfile
+
+      - name: Verify Electron installation
+        run: |
+          echo "Checking Electron version..."
+          npx electron --version
+          echo "Electron installation verified"
 
       - name: Init notarize.ts (no-op)
         shell: bash
