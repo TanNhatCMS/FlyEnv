@@ -9,7 +9,7 @@ MAIN_PACKAGE="./main.go" # Or "." if your main.go is in the current directory an
 ARCH=$(uname -m)
 if [ "$ARCH" = "x86_64" ]; then
     TARGET="linux amd64 v1"
-elif [ "$ARCH" = "aarch64" ]; then
+elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
     TARGET="linux arm64"
 else
     echo "Unsupported architecture: $ARCH"
