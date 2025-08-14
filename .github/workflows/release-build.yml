@@ -120,19 +120,23 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: yarn build
 
-      - name: Upload to GitHub Release
+      - name: Upload Linux artifacts to GitHub Release
+        if: runner.os == 'Linux'
         uses: softprops/action-gh-release@v1
         with:
           files: |
             release/*.deb
             release/*.rpm
-            release/*.AppImage
-            release/*.tar.*
-            release/*.dmg
-            release/*.zip
-            release/*.pkg
+            release/latest-linux.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windowns artifacts to GitHub Release
+        if: runner.os == 'Windows'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
             release/*.exe
-            release/*.msi
-            release/*.yml
+            release/latest.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
