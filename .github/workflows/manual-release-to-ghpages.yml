@@ -4,43 +4,57 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag của release (bỏ trống để lấy release mới nhất)"
+        description: "Release tag (vd: v1.2.3). Bỏ trống = latest"
         required: false
         default: ""
-      pattern:
-        description: "Glob pattern chọn file .deb"
-        required: false
-        default: "*.deb"
 
 permissions:
-  contents: write   # cần để push gh-pages
+  contents: write
 
 jobs:
-  publish-apt:
+  apt-index:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (required for gh-pages action)
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
+      # Tải .deb về tạm để sinh Packages, nhưng KHÔNG publish .deb lên gh-pages
       - name: Download .deb from Release
         uses: robinraju/release-downloader@v1.10
         with:
           repository: ${{ github.repository }}
-          latest: ${{ inputs.tag == '' }}        # true nếu không nhập tag
-          tag: ${{ inputs.tag }}                 # dùng tag nếu có
-          fileName: ${{ inputs.pattern }}        # ví dụ *amd64.deb
-          out-file-path: aptrepo                 # lưu file về ./aptrepo
+          latest: ${{ inputs.tag == '' }}
+          tag: ${{ inputs.tag }}
+          fileName: "*.deb"
+          out-file-path: work/pool    # work dir only
 
-      - name: Build APT index (Packages & Packages.gz)
+      - name: Build Packages/Packages.gz with pool/vX.Y.Z paths
         run: |
           sudo apt-get update && sudo apt-get install -y dpkg-dev
-          cd aptrepo
-          # tạo Packages text + nén Packages.gz
+          set -e
+          TAG="${{ inputs.tag }}"
+          if [ -z "$TAG" ]; then
+            # Lấy tag từ tên file .deb (giả sử file có _<version>_amd64.deb trùng tag v<version>)
+            TAG="$(ls work/pool/*.deb | sed -E 's/.*_([0-9][^_]*)_amd64\.deb/\1/' | head -n1)"
+            TAG="v${TAG}"
+          fi
+          mkdir -p aptrepo/pool/"$TAG"
+          # Đổi tên file cho sạch (tùy bạn, có thể giữ nguyên)
+          for f in work/pool/*.deb; do
+            bn="$(basename "$f")"
+            cp "$f" "aptrepo/pool/$TAG/$bn"
+          done
+
+          pushd aptrepo
+          # Quan trọng: chạy scan trên root để Filename là pool/<tag>/<file>.deb (đường dẫn tương đối)
           dpkg-scanpackages . /dev/null > Packages
           gzip -9c Packages > Packages.gz
-          ls -lah
+          popd
 
-      - name: Publish to gh-pages
+          echo "== Index built with TAG=$TAG =="
+          ls -lah aptrepo
+          awk 'NR<=50{print}' aptrepo/Packages || true
+
+      - name: Publish ONLY index to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
