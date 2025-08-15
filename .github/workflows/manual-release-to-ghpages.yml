@@ -1,0 +1,48 @@
+name: Publish APT repo from Release assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag của release (bỏ trống để lấy release mới nhất)"
+        required: false
+        default: ""
+      pattern:
+        description: "Glob pattern chọn file .deb"
+        required: false
+        default: "*.deb"
+
+permissions:
+  contents: write   # cần để push gh-pages
+
+jobs:
+  publish-apt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (required for gh-pages action)
+        uses: actions/checkout@v4
+
+      - name: Download .deb from Release
+        uses: robinraju/release-downloader@v1.10
+        with:
+          repository: ${{ github.repository }}
+          latest: ${{ inputs.tag == '' }}        # true nếu không nhập tag
+          tag: ${{ inputs.tag }}                 # dùng tag nếu có
+          fileName: ${{ inputs.pattern }}        # ví dụ *amd64.deb
+          out-file-path: aptrepo                 # lưu file về ./aptrepo
+
+      - name: Build APT index (Packages & Packages.gz)
+        run: |
+          sudo apt-get update && sudo apt-get install -y dpkg-dev
+          cd aptrepo
+          # tạo Packages text + nén Packages.gz
+          dpkg-scanpackages . /dev/null > Packages
+          gzip -9c Packages > Packages.gz
+          ls -lah
+
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./aptrepo
