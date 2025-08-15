@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Tải .deb về tạm để sinh Packages, nhưng KHÔNG publish .deb lên gh-pages
+      # Tải .deb từ Release về thư mục tạm, không up .deb lên gh-pages
       - name: Download .deb from Release
         uses: robinraju/release-downloader@v1.10
         with:
@@ -25,34 +25,46 @@ jobs:
           latest: ${{ inputs.tag == '' }}
           tag: ${{ inputs.tag }}
           fileName: "*.deb"
-          out-file-path: work/pool    # work dir only
+          out-file-path: work/pool
 
       - name: Build Packages/Packages.gz with pool/vX.Y.Z paths
         run: |
-          sudo apt-get update && sudo apt-get install -y dpkg-dev
-          set -e
+          sudo apt-get update && sudo apt-get install -y dpkg-dev jq curl
+          set -euo pipefail
+
+          # 1) Lấy TAG
           TAG="${{ inputs.tag }}"
           if [ -z "$TAG" ]; then
-            # Lấy tag từ tên file .deb (giả sử file có _<version>_amd64.deb trùng tag v<version>)
-            TAG="$(ls work/pool/*.deb | sed -E 's/.*_([0-9][^_]*)_amd64\.deb/\1/' | head -n1)"
-            TAG="v${TAG}"
+            TAG="$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r .tag_name)"
           fi
+          echo "Using TAG=$TAG"
+
+          # 2) Tạo thư mục pool/<TAG>
           mkdir -p aptrepo/pool/"$TAG"
-          # Đổi tên file cho sạch (tùy bạn, có thể giữ nguyên)
+
+          # 3) Copy file .deb vào pool/<TAG> (chỉ copy file, không copy thư mục)
+          shopt -s nullglob
           for f in work/pool/*.deb; do
             bn="$(basename "$f")"
             cp "$f" "aptrepo/pool/$TAG/$bn"
+            echo "Copied: $bn"
           done
 
-          pushd aptrepo
-          # Quan trọng: chạy scan trên root để Filename là pool/<tag>/<file>.deb (đường dẫn tương đối)
+          # 4) Kiểm tra có file .deb hay không
+          if ! ls aptrepo/pool/"$TAG"/*.deb >/dev/null 2>&1; then
+            echo "ERROR: No .deb files found."
+            exit 1
+          fi
+
+          # 5) Sinh Packages & Packages.gz
+          pushd aptrepo >/dev/null
           dpkg-scanpackages . /dev/null > Packages
           gzip -9c Packages > Packages.gz
-          popd
+          popd >/dev/null
 
-          echo "== Index built with TAG=$TAG =="
-          ls -lah aptrepo
-          awk 'NR<=50{print}' aptrepo/Packages || true
+          # 6) Xoá pool nếu không muốn upload file nặng lên gh-pages
+          rm -rf aptrepo/pool
+          echo "Index built for TAG=$TAG. pool/ removed to avoid large uploads."
 
       - name: Publish ONLY index to gh-pages
         uses: peaceiris/actions-gh-pages@v4
