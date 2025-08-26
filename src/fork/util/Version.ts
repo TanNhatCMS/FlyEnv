@@ -32,19 +32,15 @@ export function versionFixed(version?: string | null) {
 }
 
 export const versionCheckBin = (binPath: string) => {
-  console.log('versionCheckBin: ', binPath)
   if (existsSync(binPath)) {
-    console.log('binPath: ', binPath)
     binPath = realpathSync(binPath)
     if (!existsSync(binPath)) {
       return false
     }
     const stat = statSync(binPath)
-    console.log('stat: ', stat.isFile(), stat.isDirectory(), stat.isSymbolicLink())
     if (!stat.isFile()) {
       return false
     }
-    console.log('binPath realpathSync: ', binPath)
     return binPath
   }
   return false
@@ -95,7 +91,8 @@ export const versionBinVersionSync = (bin: string, command: string, reg: RegExp)
 export const versionBinVersion = (
   bin: string,
   command: string,
-  reg: RegExp
+  reg: RegExp,
+  findInError?: boolean
 ): Promise<{ version?: string; error?: string }> => {
   return new Promise(async (resolve) => {
     const handleCatch = (err: any) => {
@@ -127,6 +124,13 @@ export const versionBinVersion = (
       handleThen(res)
     } catch (e) {
       console.log('versionBinVersion err: ', e)
+      if (findInError) {
+        handleThen({
+          stdout: '',
+          stderr: `${e}`
+        })
+        return
+      }
       handleCatch(e)
     }
   })

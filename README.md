@@ -32,12 +32,12 @@ FlyEnv is packed with features to make your development workflow smoother and mo
 
 ### Core Modules
 - **AI Integration**: Ollama, DeepSeek, Chatbox.
-- **Web Servers**: Apache, Nginx, Caddy, Tomcat.
+- **Web Servers**: Apache, Nginx, Caddy, Tomcat, Consul.
 - **Databases**: MySQL, MariaDB, PostgreSQL, MongoDB.
 - **Email Server**: Mailpit.
-- **Programming Languages**: PHP (Composer), Java (Maven), NodeJS, Python, Go, Erlang, Ruby, Rust, Bun, Deno.
+- **Programming Languages**: PHP (Composer), Java (Maven), NodeJS, Python, Go, Erlang, Ruby, Rust (Rustup), Bun, Deno, Gradle.
 - **Data Queue & Cache**: Redis, Memcached, RabbitMQ, etcd.
-- **Search Engine**: Elasticsearch, Meilisearch
+- **Search Engine**: Elasticsearch, Meilisearch, Typesense
 - **Object Storage**: Minio.
 - **Utilities**: DNS Server, FTP Server, Static HTTP Server.
 - **Custom modules**: Users can add modules on their own, whether as services or commonly used commands. FlyEnv's custom module system ensures that user modules function just like system modules, delivering a seamless user experience.
@@ -80,12 +80,12 @@ brew install flyenv
 ```
 
 #### Intel (x86)
-- [FlyEnv-4.10.5.dmg](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.5/FlyEnv-4.10.5.dmg)
-- [FlyEnv-4.10.5-mac.zip](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.5/FlyEnv-4.10.5-mac.zip)
+- [FlyEnv-4.10.7.dmg](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.7/FlyEnv-4.10.7.dmg)
+- [FlyEnv-4.10.7-mac.zip](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.7/FlyEnv-4.10.7-mac.zip)
 
 #### Apple Silicon (ARM64)
-- [FlyEnv-4.10.5-arm64.dmg](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.5/FlyEnv-4.10.5-arm64.dmg)
-- [FlyEnv-4.10.5-arm64-mac.zip](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.5/FlyEnv-4.10.5-arm64-mac.zip)
+- [FlyEnv-4.10.7-arm64.dmg](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.7/FlyEnv-4.10.7-arm64.dmg)
+- [FlyEnv-4.10.7-arm64-mac.zip](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.7/FlyEnv-4.10.7-arm64-mac.zip)
 
 > **Tip**: For a lightweight PHP and web server solution, check out [FlyPHPServer](https://flyenv.com/flyphpserver.html), available on the [Mac App Store](https://apps.apple.com/us/app/flyphpserver/id1506384441).
 
@@ -95,22 +95,22 @@ brew install flyenv
 
 #### Installer version
 
-- [FlyEnv-Setup-4.10.5.exe](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.5/FlyEnv-Setup-4.10.5.exe)
+- [FlyEnv-Setup-4.10.7.exe](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.7/FlyEnv-Setup-4.10.7.exe)
 
 #### Portable version
 
-- [FlyEnv-Portable-4.10.5.exe](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.5/FlyEnv-Portable-4.10.5.exe)
+- [FlyEnv-Portable-4.10.7.exe](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.7/FlyEnv-Portable-4.10.7.exe)
 
 ---
 
 ### Linux
 #### Debian / Ubuntu
-- **x86_64**: [FlyEnv-4.10.5-x64.deb](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.5/FlyEnv-4.10.5-x64.deb)
-- **ARM64**: [FlyEnv-4.10.5-arm64.deb](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.5/FlyEnv-4.10.5-arm64.deb)
+- **x86_64**: [FlyEnv-4.10.7-x64.deb](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.7/FlyEnv-4.10.7-x64.deb)
+- **ARM64**: [FlyEnv-4.10.7-arm64.deb](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.7/FlyEnv-4.10.7-arm64.deb)
 
 #### Red Hat / Fedora / SUSE / CentOS
-- **x86_64**: [FlyEnv-4.10.5-x64.rpm](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.5/FlyEnv-4.10.5-x64.rpm)
-- **ARM64**: [FlyEnv-4.10.5-arm64.rpm](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.5/FlyEnv-4.10.5-arm64.rpm)
+- **x86_64**: [FlyEnv-4.10.7-x64.rpm](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.7/FlyEnv-4.10.7-x64.rpm)
+- **ARM64**: [FlyEnv-4.10.7-arm64.rpm](https://github.com/xpf0000/FlyEnv/releases/download/v4.10.7/FlyEnv-4.10.7-arm64.rpm)
 
 ---
 

@@ -7,6 +7,7 @@ import {
   mkdirp,
   moveChildDirToParent,
   readdir,
+  readFile,
   remove,
   uuid,
   versionBinVersion,
@@ -17,9 +18,10 @@ import {
   zipUnpack
 } from '../../Fn'
 import TaskQueue from '../../TaskQueue'
-import { basename, join } from 'path'
+import { join } from 'path'
 import { existsSync } from 'fs'
 import { isWindows } from '@shared/utils'
+import { homedir, tmpdir } from 'node:os'
 
 class Rust extends Base {
   constructor() {
@@ -58,13 +60,21 @@ class Rust extends Base {
   }
 
   allInstalledVersions(setup: any) {
-    return new ForkPromise((resolve) => {
+    return new ForkPromise(async (resolve) => {
       let versions: SoftInstalled[] = []
       let all: Promise<SoftInstalled[]>[] = []
+      const customDirs = [...(setup?.rust?.dirs ?? [])]
+      const rustupDir = join(homedir(), '.rustup/toolchains')
+      const dirs = await readdir(rustupDir, { withFileTypes: true })
+      dirs.forEach((dir) => {
+        if (dir.isDirectory()) {
+          customDirs.push(join(rustupDir, dir.name))
+        }
+      })
       if (isWindows()) {
-        all = [versionLocalFetch([...(setup?.rust?.dirs ?? [])], 'cargo.exe')]
+        all = [versionLocalFetch(customDirs, 'rustc.exe')]
       } else {
-        all = [versionLocalFetch([...(setup?.rust?.dirs ?? [])], 'cargo', 'rust')]
+        all = [versionLocalFetch(customDirs, 'rustc', 'rust')]
       }
       Promise.all(all)
         .then(async (list) => {
@@ -75,7 +85,7 @@ class Rust extends Base {
               versionBinVersion,
               item.bin,
               `"${item.bin}" --version`,
-              /(cargo )(\d+(\.\d+){1,4})(.*?)/g
+              /(rustc )(\d+(\.\d+){1,4})(.*?)/g
             )
           )
           return Promise.all(all)
@@ -87,16 +97,6 @@ class Rust extends Base {
               ? Number(versionFixed(version).split('.').slice(0, 2).join(''))
               : null
             const item = versions[i]
-            if (isWindows()) {
-              item.path = join(item.path, '../')
-            } else {
-              if (item.path.includes(global.Server.AppDir!)) {
-                const p = join(item.path, '../bin/cargo')
-                if (existsSync(p)) {
-                  item.path = join(p, '../../')
-                }
-              }
-            }
 
             Object.assign(item, {
               version: version,
@@ -132,23 +132,9 @@ class Rust extends Base {
       const dir = row.appDir
       await super._installSoftHandle(row)
       await moveChildDirToParent(dir)
-      const appBinDir = join(row.appDir, 'bin')
-      await mkdirp(appBinDir)
-      const subDirs = await readdir(row.appDir)
-      for (const d of subDirs) {
-        const binDir = join(row.appDir, d, 'bin')
-        if (existsSync(binDir)) {
-          const binFiles = await readdir(binDir)
-          for (const bin of binFiles) {
-            const srcFile = join(binDir, bin)
-            const destFile = join(appBinDir, basename(bin))
-            if (!existsSync(destFile) && existsSync(srcFile)) {
-              try {
-                await execPromise(['ln', '-s', `"${srcFile}"`, `"${destFile}"`].join(' '))
-              } catch {}
-            }
-          }
-        }
+      const installSH = join(row.appDir, 'install.sh')
+      if (existsSync(installSH)) {
+        await execPromise(`cd "${row.appDir}" && ./install.sh --destdir="./" --prefix="/"`)
       }
     }
   }
@@ -163,6 +149,91 @@ class Rust extends Base {
         reject(e)
         return
       }
+    })
+  }
+
+  checkRustup() {
+    return new ForkPromise(async (resolve) => {
+      let rustupBin = join(homedir(), '.cargo/bin/rustup')
+      if (isWindows()) {
+        rustupBin = join(homedir(), '.cargo/bin/rustup.exe')
+      }
+      console.log('checkRustup: ', rustupBin)
+      if (existsSync(rustupBin)) {
+        resolve(rustupBin)
+      }
+      resolve(null)
+    })
+  }
+
+  rustupData() {
+    return new ForkPromise(async (resolve) => {
+      let rustupBin = join(homedir(), '.cargo/bin/rustup')
+      if (isWindows()) {
+        rustupBin = join(homedir(), '.cargo/bin/rustup.exe')
+      }
+      const toolchainDir = join(homedir(), '.rustup/toolchains')
+
+      const toolchainList: any = []
+      const tmplDir = join(tmpdir(), uuid())
+      await mkdirp(tmplDir)
+      const tmplFile = join(tmplDir, `${uuid()}.txt`)
+      try {
+        await execPromise(`"${rustupBin}" toolchain list > "${tmplFile}"`)
+        const content = await readFile(tmplFile, 'utf-8')
+        if (content) {
+          const list = content.split('\n').filter((f) => !!f.trim())
+          for (const v of list) {
+            const dir = v.split(' ').shift()!
+            const versionFile = join(tmplDir, `${uuid()}.txt`)
+            const versionDir = join(toolchainDir, dir)
+            let versionBin = join(toolchainDir, dir, 'bin/cargo')
+            if (isWindows()) {
+              versionBin = join(toolchainDir, dir, 'bin/cargo.exe')
+            }
+            if (existsSync(versionBin)) {
+              await execPromise(`"${versionBin}" version > "${versionFile}"`)
+            }
+            const vContent = await readFile(versionFile, 'utf-8')
+            const version = vContent.split(' ')?.[1]
+            const name = dir.split('-').shift()
+            if (version && name) {
+              toolchainList.push({
+                path: versionDir,
+                name,
+                version,
+                isDefault: v.includes('(active, default)')
+              })
+            }
+          }
+        }
+      } catch {}
+
+      const targetList = []
+      const tmplFile1 = join(tmplDir, `${uuid()}.txt`)
+      try {
+        await execPromise(`"${rustupBin}" target list > "${tmplFile1}"`)
+        const content = await readFile(tmplFile1, 'utf-8')
+        if (content) {
+          const list = content.split('\n').filter((f) => !!f.trim())
+          for (const v of list) {
+            const name = v.split(' ').shift()!
+            targetList.push({
+              name,
+              installed: v.includes('(installed)')
+            })
+          }
+        }
+      } catch {}
+
+      setTimeout(() => {
+        remove(tmplDir).catch()
+      }, 2000)
+
+      resolve({
+        toolchainList,
+        targetList
+      })
     })
   }
 }

@@ -7,7 +7,6 @@ import {
   getAllFileAsync,
   handleWinPathArr,
   isNTFS,
-  setDir777ToCurrentUser,
   uuid,
   writePath,
   copyFile,
@@ -19,7 +18,6 @@ import {
   remove,
   writeFile,
   zipUnpack,
-  stat,
   execPromiseWithEnv
 } from '../../Fn'
 import { ForkPromise } from '@shared/ForkPromise'
@@ -30,8 +28,9 @@ import type { SoftInstalled } from '@shared/app'
 import type { AppServiceAliasItem } from '@shared/app'
 import { BomCleanTask } from '../../util/BomCleanTask'
 import { ProcessListSearch, ProcessPidList, ProcessPidListByPids } from '@shared/Process.win'
-import type { PItem } from '@shared/Process'
+import { PItem, ProcessListByPid } from '@shared/Process'
 import RequestTimer from '@shared/requestTimer'
+import Helper from '../../Helper'
 
 class Manager extends Base {
   constructor() {
@@ -198,9 +197,8 @@ subjectAltName=@alt_names
 
   killPids(sig: string, pids: Array<string>) {
     return new ForkPromise(async (resolve) => {
-      const str = pids.map((s) => `/pid ${s}`).join(' ')
       try {
-        await execPromise(`taskkill /f /t ${str}`)
+        await Helper.send('tools', 'kill', pids)
       } catch {}
       resolve(true)
     })
@@ -208,44 +206,25 @@ subjectAltName=@alt_names
 
   getPortPids(name: string) {
     return new ForkPromise(async (resolve) => {
-      const command = `netstat -ano | findstr :${name}`
-      let res: any
+      let pids: string[] = []
       try {
-        res = await execPromise(command)
+        pids = (await Helper.send('tools', 'getPortPidsWin', name)) as any
       } catch {}
-      const lines = res?.stdout?.trim()?.split('\n') ?? []
-      const list = lines
-        .filter((s: string) => !s.includes(`findstr `))
-        .map((i: string) => {
-          const all = i
-            .split(' ')
-            .filter((s: string) => {
-              return !!s.trim()
-            })
-            .map((s) => s.trim())
-          if (all[1].endsWith(`:${name}`)) {
-            const PID = all.pop()
-            return PID
-          } else {
-            return undefined
-          }
+      pids = Array.from(new Set(pids))
+      pids = pids
+        .map((m) => m.trim())
+        .filter((p) => {
+          return !!p && p !== '0'
         })
-        .filter((p: string) => !!p)
-      const arr: any[] = []
-      const pids = Array.from(new Set(list))
       if (pids.length === 0) {
-        return resolve(arr)
+        return resolve([])
       }
+      const arr: any[] = []
       console.log('pids: ', pids)
       const all = await ProcessPidList()
       for (const pid of pids) {
-        const find = all.find((a) => `${a.PID}` === `${pid}`)
-        if (find) {
-          arr.push({
-            PID: find.PID,
-            COMMAND: find.COMMAND
-          })
-        }
+        const item = ProcessListByPid(pid, all)
+        arr.push(...item)
       }
       resolve(arr)
     })
@@ -255,29 +234,12 @@ subjectAltName=@alt_names
     return new ForkPromise(async (resolve) => {
       const list: string[] = []
       for (const port of ports) {
-        const command = `netstat -ano | findstr :${port}`
-        let res: any
+        let portList: string[] = []
         try {
-          res = await execPromise(command)
-        } catch {}
-        const lines = res?.stdout?.trim()?.split('\n') ?? []
-        const portList = lines
-          .filter((s: string) => !s.includes(`findstr `))
-          .map((i: string) => {
-            const all = i
-              .split(' ')
-              .filter((s: string) => {
-                return !!s.trim()
-              })
-              .map((s) => s.trim())
-            if (all[1].endsWith(`:${name}`)) {
-              const PID = all.pop()
-              return PID
-            } else {
-              return undefined
-            }
-          })
-          .filter((p: string) => !!p)
+          portList = (await Helper.send('tools', 'getPortPidsWin', port)) as any
+        } catch {
+          portList = []
+        }
         list.push(...portList)
       }
 
@@ -290,9 +252,8 @@ subjectAltName=@alt_names
       if (!all.length) {
         return resolve(true)
       }
-      const str = all.map((s) => `/pid ${s}`).join(' ')
       try {
-        await execPromise(`taskkill /f /t ${str}`)
+        await Helper.send('tools', 'kill', all)
       } catch {}
       resolve(true)
     })
@@ -339,10 +300,18 @@ subjectAltName=@alt_names
 
       const envDir = join(dirname(global.Server.AppDir!), 'env')
       const flagDir = join(envDir, typeFlag)
+      let hasError = false
       try {
-        await execPromise(`rmdir /S /Q "${flagDir}"`)
-      } catch (e) {
-        console.log('rmdir err: ', e)
+        await remove(flagDir)
+      } catch {
+        hasError = true
+      }
+      if (hasError) {
+        try {
+          await Helper.send('tools', 'rm', flagDir)
+        } catch (e) {
+          console.log('rmdir err: ', e)
+        }
       }
       console.log('removePATH flagDir: ', flagDir)
 
@@ -434,11 +403,20 @@ subjectAltName=@alt_names
       }
       const flagDir = join(envDir, typeFlag)
       console.log('flagDir: ', flagDir)
+      let hasError = false
       try {
-        await execPromise(`rmdir /S /Q "${flagDir}"`)
-      } catch (e) {
-        console.log('rmdir err: ', e)
+        await remove(flagDir)
+      } catch {
+        hasError = true
       }
+      if (hasError) {
+        try {
+          await Helper.send('tools', 'rm', flagDir)
+        } catch (e) {
+          console.log('rmdir err: ', e)
+        }
+      }
+
       if (!rawOldPath.includes(binDir)) {
         try {
           await execPromise(`mklink /J "${flagDir}" "${item.path}"`)
@@ -530,19 +508,6 @@ subjectAltName=@alt_names
             oldPath.unshift(dirname(pip))
           }
         }
-        // Handle Rust
-        if (existsSync(join(rawEnvPath, 'cargo/bin/cargo.exe'))) {
-          const dirs = await readdir(rawEnvPath)
-          for (const f of dirs) {
-            const binDir = join(rawEnvPath, f, 'bin')
-            if (existsSync(binDir)) {
-              const state = await stat(binDir)
-              if (state.isDirectory()) {
-                oldPath.unshift(binDir)
-              }
-            }
-          }
-        }
       }
 
       if (typeFlag === 'composer') {
@@ -582,6 +547,8 @@ php "%~dp0composer.phar" %*`
       let otherString = ''
       if (typeFlag === 'java') {
         otherString = `"JAVA_HOME" = "${flagDir}"`
+      } else if (typeFlag === 'gradle') {
+        otherString = `"GRADLE_HOME" = "${flagDir}"`
       } else if (typeFlag === 'erlang') {
         otherString = `"ERLANG_HOME" = "${flagDir}"`
         const f = join(global.Server.Cache!, `${uuid()}.ps1`)
@@ -616,6 +583,20 @@ php "%~dp0composer.phar" %*`
     })
   }
 
+  private async removeFixed(dir: string) {
+    let hasError = false
+    try {
+      await remove(dir)
+    } catch {
+      hasError = true
+    }
+    if (hasError) {
+      try {
+        await Helper.send('tools', 'rm', dir)
+      } catch {}
+    }
+  }
+
   setAlias(
     service: SoftInstalled,
     item: AppServiceAliasItem | undefined,
@@ -628,7 +609,7 @@ php "%~dp0composer.phar" %*`
       if (old?.id) {
         const oldFile = join(aliasDir, `${old.name}.bat`)
         if (existsSync(oldFile)) {
-          await remove(oldFile)
+          await this.removeFixed(oldFile)
         }
         const index = alias?.[service.bin]?.findIndex((a) => a.id === old.id)
         if (index >= 0) {
@@ -668,7 +649,7 @@ chcp 65001>nul
       }
 
       try {
-        await execPromise(`setx /M FLYENV_ALIAS "${aliasDir}"`)
+        await Helper.send('tools', 'exec', `setx /M FLYENV_ALIAS "${aliasDir}"`)
       } catch {}
 
       await addPath('%FLYENV_ALIAS%')
@@ -688,7 +669,7 @@ chcp 65001>nul
           for (const i of item) {
             const file = join(aliasDir, `${i.name}.bat`)
             if (existsSync(file)) {
-              await remove(file)
+              await this.removeFixed(file)
             }
           }
           delete alias[bin]
@@ -698,7 +679,7 @@ chcp 65001>nul
             if (i?.php?.bin && !existsSync(i?.php?.bin)) {
               const file = join(aliasDir, `${i.name}.bat`)
               if (existsSync(file)) {
-                await remove(file)
+                await this.removeFixed(file)
               }
               continue
             }
@@ -748,32 +729,6 @@ chcp 65001>nul
         })
       }
       resolve(list)
-    })
-  }
-
-  envPathString() {
-    return new ForkPromise(async (resolve) => {
-      let cmdRes = ''
-      let psRes = ''
-      try {
-        cmdRes = (await execPromiseWithEnv(`set PATH`))?.stdout?.trim() ?? ''
-      } catch (e) {
-        cmdRes = `${e}`
-      }
-      try {
-        psRes =
-          (
-            await execPromiseWithEnv(`$env:PATH`, {
-              shell: 'powershell.exe'
-            })
-          )?.stdout?.trim() ?? ''
-      } catch (e) {
-        psRes = `${e}`
-      }
-      resolve({
-        cmd: cmdRes,
-        ps: psRes
-      })
     })
   }
 
@@ -1030,31 +985,6 @@ chcp 65001>nul
     })
   }
 
-  envAllowDirUpdate(dir: string, action: 'add' | 'del') {
-    return new ForkPromise(async (resolve) => {
-      const jsonFile = join(dirname(global.Server.AppDir!), 'bin/.flyenv.dir')
-      let json: string[] = []
-      if (existsSync(jsonFile)) {
-        try {
-          const content = await readFile(jsonFile, 'utf-8')
-          json = JSON.parse(content)
-        } catch {}
-      }
-      if (action === 'add') {
-        if (!json.includes('dir')) {
-          json.push(dir)
-        }
-      } else {
-        const index = json.indexOf(dir)
-        if (index >= 0) {
-          json.splice(index, 1)
-        }
-      }
-      await writeFile(jsonFile, JSON.stringify(json))
-      resolve(true)
-    })
-  }
-
   initFlyEnvSH() {
     return new ForkPromise(async (resolve) => {
       const psVersions = [
@@ -1102,15 +1032,6 @@ chcp 65001>nul
         )
       } catch {}
 
-      resolve(true)
-    })
-  }
-
-  fixDirRole(dir: string) {
-    return new ForkPromise(async (resolve) => {
-      try {
-        await setDir777ToCurrentUser(dir)
-      } catch {}
       resolve(true)
     })
   }

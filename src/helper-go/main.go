@@ -8,11 +8,14 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
 	"helper-go/module"
 	"helper-go/utils"
+
+	"github.com/Microsoft/go-winio"
 )
 
 // Constants for socket paths
@@ -71,61 +74,39 @@ func NewAppHelper() *AppHelper {
 
 // Run sets up and starts the Unix domain socket server
 func (a *AppHelper) Run() error {
-	// Clean up existing socket file if it exists
-	if utils.ExistsSync(SOCKET_PATH) {
+	// Clean up existing socket file if it exists (Unix only)
+	if runtime.GOOS != "windows" && utils.ExistsSync(SOCKET_PATH) {
 		if err := os.Remove(SOCKET_PATH); err != nil {
 			return fmt.Errorf("failed to remove old socket file '%s': %w", SOCKET_PATH, err)
 		}
 	}
 
-	// Create the Unix domain socket listener
-	listener, err := net.Listen("unix", SOCKET_PATH)
-	if err != nil {
-		return fmt.Errorf("failed to listen on socket '%s': %w", SOCKET_PATH, err)
+	var listener net.Listener
+	var err error
+
+	// Create the appropriate listener based on platform
+	if runtime.GOOS == "windows" {
+		// Use named pipe on Windows
+		listener, err = a.createWindowsNamedPipe()
+		if err != nil {
+			return fmt.Errorf("failed to create named pipe: %w", err)
+		}
+		fmt.Println("Server is listening on Windows named pipe:", getPipeNameFromSocketPath(SOCKET_PATH))
+	} else {
+		// Use Unix domain socket on Unix-like systems
+		listener, err = net.Listen("unix", SOCKET_PATH)
+		if err != nil {
+			return fmt.Errorf("failed to listen on socket '%s': %w", SOCKET_PATH, err)
+		}
+		fmt.Println("Server is listening on Unix domain socket:", SOCKET_PATH)
 	}
+
 	defer listener.Close() // Ensure listener is closed when Run exits
 
-	fmt.Println("Server is listening on", SOCKET_PATH)
-
-	// Post-listen setup tasks
-	go func() {
-		// Use a short sleep to allow the socket to fully initialize, mirroring JS waitTime
-		time.Sleep(500 * time.Millisecond)
-
-		var rule string
-		if utils.ExistsSync(Role_Path) {
-			content, err := utils.ReadFile(Role_Path)
-			if err != nil {
-				fmt.Printf("Warning: failed to read role file '%s': %v\n", Role_Path, err)
-			} else {
-				rule = strings.TrimSpace(content)
-				fmt.Printf("rule 000 '%s\n", rule)
-				if err := utils.Mkdirp(filepath.Dir(Role_Path_Back)); err != nil {
-					fmt.Printf("Warning: failed to create parent directory for '%s': %v\n", Role_Path_Back, err)
-				} else {
-					if err := utils.WriteFileString(Role_Path_Back, rule); err != nil {
-						fmt.Printf("Warning: failed to write role file back to '%s': %v\n", Role_Path_Back, err)
-					}
-				}
-			}
-		} else if utils.ExistsSync(Role_Path_Back) {
-			content, err := utils.ReadFile(Role_Path_Back)
-			if err != nil {
-				fmt.Printf("Warning: failed to read role backup file '%s': %v\n", Role_Path_Back, err)
-			} else {
-				rule = strings.TrimSpace(content)
-				fmt.Printf("rule 111 '%s\n", rule)
-			}
-		}
-
-		if rule != "" && utils.ExistsSync(SOCKET_PATH) {
-			// execPromise returns (stdout, stderr, error)
-			_, stderr, err := utils.ExecPromise(fmt.Sprintf(`chown "%s" "%s"`, rule, SOCKET_PATH), nil)
-			if err != nil {
-				fmt.Printf("Warning: failed to chown socket '%s' to '%s': %v, stderr: %s\n", SOCKET_PATH, rule, err, stderr)
-			}
-		}
-	}()
+	// Post-listen setup tasks (Unix only for chown)
+	if runtime.GOOS != "windows" {
+		go a.setupUnixPermissions()
+	}
 
 	// Accept and handle incoming connections
 	for {
@@ -140,6 +121,93 @@ func (a *AppHelper) Run() error {
 		// Handle each connection in a new goroutine
 		go a.handleClient(conn)
 	}
+}
+
+// createWindowsNamedPipe creates a Windows named pipe using go-winio
+func (a *AppHelper) createWindowsNamedPipe() (net.Listener, error) {
+	pipeName := getPipeNameFromSocketPath(SOCKET_PATH)
+	fullPipePath := `\\.\pipe\` + pipeName
+
+	// Configure the named pipe
+	pipeConfig := &winio.PipeConfig{
+		SecurityDescriptor: "D:P(A;;GA;;;WD)", // Allow generic all access to everyone
+		MessageMode:        true,              // Message mode for reliable message boundaries
+		InputBufferSize:    65536,             // 64KB input buffer
+		OutputBufferSize:   65536,             // 64KB output buffer
+	}
+
+	// Create and listen on the named pipe
+	listener, err := winio.ListenPipe(fullPipePath, pipeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to listen on named pipe '%s': %w", fullPipePath, err)
+	}
+
+	return listener, nil
+}
+
+// setupUnixPermissions handles the chown operation for Unix domain sockets
+func (a *AppHelper) setupUnixPermissions() {
+	// Use a short sleep to allow the socket to fully initialize
+	time.Sleep(500 * time.Millisecond)
+
+	var rule string
+	if utils.ExistsSync(Role_Path) {
+		content, err := utils.ReadFile(Role_Path)
+		if err != nil {
+			fmt.Printf("Warning: failed to read role file '%s': %v\n", Role_Path, err)
+		} else {
+			rule = strings.TrimSpace(content)
+			fmt.Printf("Read role from primary file: '%s'\n", rule)
+
+			// Create backup directory and file
+			if err := utils.Mkdirp(filepath.Dir(Role_Path_Back)); err != nil {
+				fmt.Printf("Warning: failed to create parent directory for '%s': %v\n", Role_Path_Back, err)
+			} else {
+				if err := utils.WriteFileString(Role_Path_Back, rule); err != nil {
+					fmt.Printf("Warning: failed to write role file back to '%s': %v\n", Role_Path_Back, err)
+				}
+			}
+		}
+	} else if utils.ExistsSync(Role_Path_Back) {
+		content, err := utils.ReadFile(Role_Path_Back)
+		if err != nil {
+			fmt.Printf("Warning: failed to read role backup file '%s': %v\n", Role_Path_Back, err)
+		} else {
+			rule = strings.TrimSpace(content)
+			fmt.Printf("Read role from backup file: '%s'\n", rule)
+		}
+	}
+
+	if rule != "" && utils.ExistsSync(SOCKET_PATH) {
+		// Change ownership of the socket file
+		_, stderr, err := utils.ExecPromise(fmt.Sprintf(`chown "%s" "%s"`, rule, SOCKET_PATH), nil)
+		if err != nil {
+			fmt.Printf("Warning: failed to chown socket '%s' to '%s': %v, stderr: %s\n", SOCKET_PATH, rule, err, stderr)
+		} else {
+			fmt.Printf("Successfully changed ownership of socket to '%s'\n", rule)
+		}
+	}
+}
+
+// getPipeNameFromSocketPath extracts a valid pipe name from socket path
+func getPipeNameFromSocketPath(socketPath string) string {
+	if runtime.GOOS == "windows" {
+		// On Windows, use the base name of the socket path as pipe name
+		// Remove any invalid characters for Windows pipe names
+		baseName := filepath.Base(socketPath)
+		// Replace any non-alphanumeric characters (except underscore) with underscore
+		var result strings.Builder
+		for _, r := range baseName {
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
+				(r >= '0' && r <= '9') || r == '_' || r == '-' {
+				result.WriteRune(r)
+			} else {
+				result.WriteRune('_')
+			}
+		}
+		return result.String()
+	}
+	return socketPath
 }
 
 // handleClient processes data from a single client connection
@@ -203,7 +271,8 @@ func (a *AppHelper) handleClient(conn net.Conn) {
 								break // Exit switch on this error
 							}
 						}
-						execErr = a.Tool.Exec(command, opts) // Use a.Tool if ToolManager embeds BaseManager
+						result, execErr = a.Tool.Exec(command, opts) // Use a.Tool if ToolManager embeds BaseManager
+						fmt.Printf("tools exec result: %v, execErr: %v\n", result, execErr)
 					} else {
 						execErr = fmt.Errorf("exec: arg[0] (command) must be a string, got %T", info.Args[0])
 					}
@@ -215,6 +284,12 @@ func (a *AppHelper) handleClient(conn net.Conn) {
 					execErr = fmt.Errorf("processList expects 0 arguments, got %d", len(info.Args))
 				} else {
 					result, execErr = a.Tool.ProcessList()
+				}
+			case "processListWin":
+				if len(info.Args) != 0 {
+					execErr = fmt.Errorf("processListWin expects 0 arguments, got %d", len(info.Args))
+				} else {
+					result, execErr = a.Tool.ProcessListWin()
 				}
 			case "writeFileByRoot":
 				if len(info.Args) == 2 {
@@ -338,6 +413,16 @@ func (a *AppHelper) handleClient(conn net.Conn) {
 					}
 				} else {
 					execErr = fmt.Errorf("getPortPids expects 1 argument, got %d", len(info.Args))
+				}
+			case "getPortPidsWin":
+				if len(info.Args) == 1 {
+					if port, ok := info.Args[0].(string); ok {
+						result, execErr = a.Tool.GetPortPidsWin(port)
+					} else {
+						execErr = fmt.Errorf("getPortPidsWin: arg[0] must be a string, got %T", info.Args[0])
+					}
+				} else {
+					execErr = fmt.Errorf("getPortPidsWin expects 1 argument, got %d", len(info.Args))
 				}
 			default:
 				execErr = fmt.Errorf("unknown function '%s' for module 'tools'", info.Function)

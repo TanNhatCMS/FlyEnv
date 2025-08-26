@@ -98,9 +98,6 @@ export default class Application extends EventEmitter {
   }
 
   initAppHelper() {
-    if (isWindows()) {
-      return
-    }
     AppHelperRoleFix().catch()
     Helper.appHelper = AppHelper
     AppHelper.onStatusMessage((flag) => {
@@ -168,16 +165,21 @@ export default class Application extends EventEmitter {
   initTrayManager() {
     this.trayManager.on('style-changed', (style: 'modern' | 'classic') => {
       console.log('style-changed !!!', style)
-      if (style === "modern") {
+      if (style === 'modern') {
         if (!this?.trayWindow) {
           this.trayWindow = this.windowManager.openTrayWindow()
           AppNodeFnManager.trayWindow = this.trayWindow
           this.trayWindow.webContents.once('dom-ready', () => {
-            console.log('DOM 已准备好');
+            console.log('DOM 已准备好')
             const command = 'APP:Tray-Store-Sync'
-            this.windowManager.sendCommandTo(this.trayWindow!, command, command, this.trayManager.status)
+            this.windowManager.sendCommandTo(
+              this.trayWindow!,
+              command,
+              command,
+              this.trayManager.status
+            )
             this.trayManager.addModernStyleListener()
-          });
+          })
         }
       } else {
         this.windowManager.destroyWindow('tray')
