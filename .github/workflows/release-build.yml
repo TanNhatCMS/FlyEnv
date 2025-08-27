@@ -107,14 +107,21 @@ jobs:
           export default async function notarizing() { return; }
           EOF
 
-      - name: Build Go helper
+      - name: Build Go helper Linux
         if: runner.os == 'Linux'
         shell: bash
         working-directory: src/helper-go
         run: |
+          go mod tidy
           chmod +x ./build-os.sh
           ./build-os.sh
-
+      - name: Build Go helper Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: src/helper-go
+        run: |
+          go mod tidy
+          /build-win.ps1
       - name: Build Electron packages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
