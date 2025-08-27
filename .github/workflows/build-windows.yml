@@ -1,0 +1,72 @@
+name: Build FlyEnv • Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag version để build (ví dụ: v1.2.3). Bỏ trống = latest'
+        required: true
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (Windows • x64)
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Setup Python (for node-gyp)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build deps
+        shell: pwsh
+        run: |
+          choco install -y nsis
+          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools"
+          choco install make
+          choco install 7zip
+
+      - name: Install Yarn & deps
+        shell: pwsh
+        run: |
+          npm -g install yarn node-gyp
+          yarn install --frozen-lockfile
+
+      - name: Build Go helper
+        shell: pwsh
+        working-directory: src/helper-go
+        run: |
+          go mod tidy
+          ./build-win.ps1
+
+      - name: Build Electron packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: yarn build
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ github.event.inputs.tag }}
+          path: release/*
