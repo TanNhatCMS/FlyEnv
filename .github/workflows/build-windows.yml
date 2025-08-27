@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   build:
-    name: Build (Windows • x64)
+    name: Build ${{ github.event.inputs.tag }}(Windows • x64)
     runs-on: windows-latest
     timeout-minutes: 60
 
