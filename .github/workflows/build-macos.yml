@@ -45,7 +45,7 @@ jobs:
         working-directory: src/helper-go
         run: |
           go mod tidy
-          chmod +x ./build-os.sh
+          chmod +x ./build.sh
           ./build.sh
 
       - name: Build Electron packages
@@ -57,4 +57,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos-${{ github.event.inputs.tag }}
-          path: release/*
+          path: |
+            release/*.zip
+            release/latest-mac.yml
+            release/*.blockmap
+            release/*.rpm
+            release/*.dmg
+
+
+
+
