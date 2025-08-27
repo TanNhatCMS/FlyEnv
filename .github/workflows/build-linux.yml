@@ -1,0 +1,63 @@
+name: Build FlyEnv • Linux
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag version để build (ví dụ: v1.2.3)'
+        required: true
+        default: 'v0.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (Linux • x64)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
+
+      - name: Setup Latest Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
+
+      - name: Setup Go (stable)
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Install build deps (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ make python3 python3-pip pkg-config fakeroot rpm
+          python3 -m pip install --upgrade pip
+
+      - name: Install Yarn & tools
+        run: |
+          npm -g install yarn node-gyp
+          yarn install --frozen-lockfile
+
+      - name: Build Go helper (Linux)
+        working-directory: src/helper-go
+        run: |
+          go mod tidy
+          chmod +x ./build-os.sh
+          ./build-os.sh
+
+      - name: Build Electron packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: yarn build
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ github.event.inputs.tag }}
+          path: release/*
