@@ -69,4 +69,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-${{ github.event.inputs.tag }}
-          path: release/*
+          path: |
+            release/*.exe
+            release/*.blockmap
+            release/latest.yml
