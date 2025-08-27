@@ -14,8 +14,8 @@ import AfterPack from '../build/afterPack'
 const conf: Configuration = {
   productName: 'FlyEnv',
   executableName: 'FlyEnv',
-  buildVersion: '4.10.7',
-  electronVersion: '35.6.0',
+  buildVersion: '4.10.8',
+  electronVersion: '35.7.5',
   appId: 'phpstudy.xpfme.com',
   asar: true,
   directories: {
