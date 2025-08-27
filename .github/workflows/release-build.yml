@@ -121,7 +121,7 @@ jobs:
         working-directory: src/helper-go
         run: |
           go mod tidy
-          /build-win.ps1
+          ./build-win.ps1
       - name: Build Electron packages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
