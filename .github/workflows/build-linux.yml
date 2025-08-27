@@ -4,16 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag version để build (ví dụ: v1.2.3)'
+        description: 'Tag version để build (ví dụ: v1.2.3). Bỏ trống = latest'
         required: true
-        default: 'v0.0.0'
+        default: ''
 
 permissions:
   contents: write
 
 jobs:
   build:
-    name: Build (Linux • x64)
+    name: Build ${{ github.event.inputs.tag }} (Linux • x64)
     runs-on: ubuntu-22.04
     timeout-minutes: 60
 
