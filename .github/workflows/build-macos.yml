@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   build:
-    name: Build (macOS • arm64)
+    name: Build ${{ github.event.inputs.tag }}(macOS • arm64)
     runs-on: macos-latest
     timeout-minutes: 60
 
