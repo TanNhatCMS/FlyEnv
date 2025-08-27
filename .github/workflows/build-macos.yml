@@ -6,7 +6,7 @@ on:
       tag:
         description: 'Tag version để build (ví dụ: v1.2.3). Bỏ trống = latest'
         required: true
-        default: 'v0.0.0'
+        default: 'v4.10.'
 
 permissions:
   contents: write
