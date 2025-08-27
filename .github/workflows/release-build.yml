@@ -134,6 +134,7 @@ jobs:
           files: |
             release/*.deb
             release/*.rpm
+            release/*.blockmap
             release/latest-linux.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -145,5 +146,6 @@ jobs:
           files: |
             release/*.exe
             release/latest.yml
+            release/*.blockmap
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
