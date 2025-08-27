@@ -13,9 +13,18 @@ permissions:
 
 jobs:
   build:
-    name: Build ${{ github.event.inputs.tag }} (Linux • x64)
-    runs-on: ubuntu-22.04
+    name: Build FlyEnv Linux • ${{ github.event.inputs.tag }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 60
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            os: ubuntu-22.04
+            target: x64
+#          - arch: arm64
+#            os: ubuntu-22.04-arm
+#            target: arm64
 
     steps:
       - name: Checkout code
@@ -60,4 +69,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-${{ github.event.inputs.tag }}
-          path: release/*
+          path: |
+            release/*.deb
+            release/*.rpm
+            release/*.yml
