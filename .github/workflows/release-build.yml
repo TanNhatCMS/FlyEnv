@@ -99,14 +99,6 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Init notarize.ts (no-op)
-        shell: bash
-        run: |
-          mkdir -p build
-          cat > build/notarize.ts << 'EOF'
-          export default async function notarizing() { return; }
-          EOF
-
       - name: Build Go helper Linux
         if: runner.os == 'Linux'
         shell: bash
@@ -115,6 +107,7 @@ jobs:
           go mod tidy
           chmod +x ./build-os.sh
           ./build-os.sh
+
       - name: Build Go helper Windows
         if: runner.os == 'Windows'
         shell: pwsh
@@ -122,6 +115,16 @@ jobs:
         run: |
           go mod tidy
           ./build-win.ps1
+
+      - name: Build Go helper macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        working-directory: src/helper-go
+        run: |
+          go mod tidy
+          chmod +x ./build.sh
+          ./build.sh
+
       - name: Build Electron packages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
