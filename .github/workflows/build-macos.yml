@@ -1,0 +1,69 @@
+name: Build FlyEnv • macOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag version để build (ví dụ: v1.2.3). Bỏ trống = latest'
+        required: true
+        default: 'v4.10.'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ github.event.inputs.tag }}(macOS • arm64)
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Install build deps
+        run: brew update
+
+      - name: Install Yarn & deps
+        run: |
+          npm -g install yarn node-gyp
+          yarn install --frozen-lockfile
+
+      - name: Build Go helper
+        working-directory: src/helper-go
+        run: |
+          go mod tidy
+          chmod +x ./build.sh
+          ./build.sh
+
+      - name: Build Electron packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: yarn build
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ github.event.inputs.tag }}
+          path: |
+            release/*.zip
+            release/latest-mac.yml
+            release/*.blockmap
+            release/*.rpm
+            release/*.dmg
+
+
+
+
