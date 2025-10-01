@@ -96,6 +96,7 @@ type StateBase = SetupBase & {
   lang: string
   theme?: string
   autoCheck: boolean
+  allowPrerelease?: boolean
   forceStart: boolean
   showAIRobot: boolean
   showTool?: boolean
@@ -156,6 +157,7 @@ const state: State = {
       },
       lang: '',
       autoCheck: true,
+      allowPrerelease: false,
       forceStart: false,
       showAIRobot: true,
       phpBrewInitiated: false,

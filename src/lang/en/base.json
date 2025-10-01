@@ -110,5 +110,8 @@
   "placeholderSearch": "Search",
   "projects": "Project",
 
-  "cleanup": "Cleanup"
+  "cleanup": "Cleanup",
+  "autoCheck": "Auto Check",
+  "allowPrerelease": "Allow Prerelease"
+
 }
