@@ -45,6 +45,7 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: 'stable'
+          cache-dependency-path: src/helper-go/go.sum
 
       - name: Setup Python (for node-gyp)
         if: runner.os == 'Windows'
