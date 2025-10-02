@@ -7,6 +7,11 @@ on:
         description: "Release tag (vd: v1.2.3). Bỏ trống = latest"
         required: false
         default: ""
+      prerelease:
+        description: "Dùng latest Pre-release khi tag để trống"
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -17,32 +22,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Tải .deb từ Release về thư mục tạm, không up .deb lên gh-pages
+      # Tải .deb từ Release/Pre-release
       - name: Download .deb from Release
+        id: dl
         uses: robinraju/release-downloader@v1.10
         with:
           repository: ${{ github.repository }}
           latest: ${{ inputs.tag == '' }}
+          # Nếu không chỉ định tag và bật 'prerelease', lấy latest pre-release
+          preRelease: ${{ inputs.tag == '' && inputs.prerelease }}
           tag: ${{ inputs.tag }}
           fileName: "*.deb"
           out-file-path: work/pool
 
-      - name: Build Packages/Packages.gz with pool/vX.Y.Z paths
+      - name: Build Packages & Release (UNSIGNED)
+        env:
+          TAG_RESOLVED: ${{ inputs.tag != '' && inputs.tag || steps.dl.outputs.tag_name }}
         run: |
-          sudo apt-get update && sudo apt-get install -y dpkg-dev jq curl
           set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev jq curl apt-utils
 
-          # 1) Lấy TAG
-          TAG="${{ inputs.tag }}"
+          # 1) Dùng TAG từ downloader (hoặc input nếu đã chỉ định)
+          TAG="${TAG_RESOLVED}"
           if [ -z "$TAG" ]; then
-            TAG="$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r .tag_name)"
+            echo "ERROR: Cannot resolve TAG."; exit 1
           fi
           echo "Using TAG=$TAG"
 
           # 2) Tạo thư mục pool/<TAG>
           mkdir -p aptrepo/pool/"$TAG"
 
-          # 3) Copy file .deb vào pool/<TAG> (chỉ copy file, không copy thư mục)
+          # 3) Copy file .deb vào pool/<TAG>
           shopt -s nullglob
           for f in work/pool/*.deb; do
             bn="$(basename "$f")"
@@ -50,7 +61,7 @@ jobs:
             echo "Copied: $bn"
           done
 
-          # 4) Kiểm tra có file .deb hay không
+          # 4) Kiểm tra có file .deb
           if ! ls aptrepo/pool/"$TAG"/*.deb >/dev/null 2>&1; then
             echo "ERROR: No .deb files found."
             exit 1
@@ -62,9 +73,30 @@ jobs:
           gzip -9c Packages > Packages.gz
           popd >/dev/null
 
-          # 6) Xoá pool nếu không muốn upload file nặng lên gh-pages
+          # 6) Sinh file Release (KHÔNG ký)
+          ARCHS="$(awk -F': ' '/^Architecture:/{print $2}' aptrepo/Packages | sort -u | tr '\n' ' ' | sed 's/ $//')"
+          [ -z "$ARCHS" ] && ARCHS="amd64"
+
+          cat > aptrepo/Release.conf <<EOF
+          APT::FTPArchive::Release {
+            Origin "${{ github.repository_owner }}";
+            Label  "${{ github.repository }}";
+            Suite  "stable";
+            Codename "stable";
+            Architectures "$ARCHS";
+            Components "main";
+            Description "APT repo for ${{ github.repository }} ($TAG)";
+          };
+          EOF
+
+          apt-ftparchive -c aptrepo/Release.conf release aptrepo > aptrepo/Release
+          echo "Generated unsigned Release for TAG=$TAG"
+
+          # 7) (Tuỳ chọn) Xoá pool để tránh upload file nặng
           rm -rf aptrepo/pool
-          echo "Index built for TAG=$TAG. pool/ removed to avoid large uploads."
+          echo "Index built. pool/ removed."
+
+          chmod -R a+r aptrepo
 
       - name: Publish ONLY index to gh-pages
         uses: peaceiris/actions-gh-pages@v4
