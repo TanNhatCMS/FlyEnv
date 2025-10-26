@@ -5,7 +5,7 @@ import PublishConfig from './publish'
 const conf: Configuration = {
   productName: 'FlyEnv',
   executableName: 'PhpWebStudy',
-  buildVersion: '4.10.8',
+  buildVersion: '4.10.9',
   electronVersion: '35.7.5',
   appId: 'phpstudy.xpfme.com',
   asar: true,
