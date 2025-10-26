@@ -621,11 +621,6 @@ export default class Application extends EventEmitter {
     try {
       const autoCheck = this.configManager.getConfig('setup.autoCheck') ?? true
       this.updateManager = new UpdateManager(autoCheck)
-      try {
-        const allowPrerelease = this.configManager.getConfig('setup.allowPrerelease') ?? false
-        // @ts-ignore electron-updater typing may not include allowPrerelease on AppUpdater in this import path
-        ;(this.updateManager as any).updater.allowPrerelease = allowPrerelease
-      } catch {}
       this.handleUpdaterEvents()
     } catch (err) {
       console.log('initUpdaterManager err: ', err)
@@ -651,13 +646,7 @@ export default class Application extends EventEmitter {
       this.configManager.setConfig(config)
       this.menuManager.rebuild()
       this.trayManager.setStyle(config?.setup?.trayMenuBarStyle ?? 'modern')
-      try {
-        const allowPrerelease = config?.setup?.allowPrerelease ?? false
-        if (this.updateManager?.updater) {
-          // @ts-ignore allowPrerelease assignment
-          this.updateManager.updater.allowPrerelease = allowPrerelease
-        }
-      } catch {}
+      this.setProxy()
     })
 
     this.on('application:relaunch', () => {
@@ -721,6 +710,14 @@ export default class Application extends EventEmitter {
       global.Server.Proxy = proxyDict
     } else {
       delete global.Server.Proxy
+    }
+    if (this.mainWindow) {
+      this.windowManager.sendCommandTo(
+        this.mainWindow,
+        'APP-Update-Global-Server',
+        'APP-Update-Global-Server',
+        JSON.parse(JSON.stringify(global.Server))
+      )
     }
   }
 

@@ -1,9 +1,28 @@
 <template>
-  <el-form-item label="端口映射">
-    <el-input-number v-model="form.apachePort" :min="1" :max="65535" />
-  </el-form-item>
-  <el-form-item label="站点目录路径">
-    <el-input v-model="form.localPath" placeholder="F:/www/project/public" />
-  </el-form-item>
+  <el-form label-position="top">
+    <BaseVM :image="image" :form-name="formName" />
+    <WwwRoot :form-name="formName" />
+    <DocRoot :form-name="formName" />
+    <PreviewVM :form-name="formName" />
+  </el-form>
 </template>
-<script lang="ts" setup></script>
+
+<script lang="ts" setup>
+  import { OfficialImages } from '@/components/Podman/officialImages'
+  import BaseVM from './components/base.vue'
+  import PreviewVM from './components/preview.vue'
+  import WwwRoot from './components/wwwRoot.vue'
+  import DocRoot from './components/docRoot.vue'
+
+  const formName = 'Apache HTTP Server'
+  const image = OfficialImages.apache?.image ?? ''
+</script>
+
+<style scoped>
+  pre {
+    background: #f5f7fa;
+    padding: 16px;
+    border-radius: 4px;
+    overflow: auto;
+  }
+</style>

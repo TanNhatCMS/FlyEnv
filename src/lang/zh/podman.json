@@ -50,5 +50,20 @@
   "CustomInput": "自定义输入",
   "SelectPresetModule": "选择预设模块",
   "TagPlaceholder": "latest 或版本号，如 8.2, 5.7, 16-alpine",
-  "NamePlaceholder": "例如：nginx"
+  "NamePlaceholder": "例如：nginx",
+  "ComposeFileSaveDir": "Compose文件保存位置",
+  "DockerImageMirror": "Docker Image 镜像(可选)",
+  "Persistence": "数据持久化",
+  "MYSQL_ROOT_PASSWORD": "ROOT密码",
+  "MYSQL_DATABASE": "数据库",
+  "MYSQL_USER": "数据库用户",
+  "MYSQL_PASSWORD": "数据库密码",
+  "PortBind": "端口映射",
+  "ContainerPort": "容器端口",
+  "LocalPort": "本地端口",
+  "ComposeNameErrorTips": "项目名称只能是字母或数字开头，包含小写字母、数字、下划线或连字符",
+  "Rename": "重命名",
+  "ImageName": "镜像名称",
+  "CommandArgs": "命令参数",
+  "Volumes": "挂载"
 }

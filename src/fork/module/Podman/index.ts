@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { uuid, execPromiseWithEnv, readFile, remove, existsSync, waitTime } from '../../Fn'
 import { isLinux, isWindows } from '@shared/utils'
 import axios from 'axios'
+import { fetchTags } from './image'
 
 class Podman extends Base {
   constructor() {
@@ -63,20 +64,28 @@ class Podman extends Base {
       let containers: any[] = []
       try {
         const cmd = isLinux()
-          ? `podman ps --format json > "${tmp}" ${getRedirect()}`
-          : `podman --connection ${machineName} ps --format json > "${tmp}" ${getRedirect()}`
+          ? `podman ps -a --format json > "${tmp}" ${getRedirect()}`
+          : `podman --connection ${machineName} ps -a --format json > "${tmp}" ${getRedirect()}`
         await execPromiseWithEnv(cmd)
         const content = await readFile(tmp, 'utf-8')
         const json = JSON.parse(content)
         containers = json.map((c: any) => ({
           id: c.Id,
-          name: c.Names?.[0] ?? '',
+          name: c.Names,
           image: c.Image,
+          ImageID: c.ImageID,
+          Mounts: c.Mounts,
+          Networks: c.Networks,
           command: c.Command,
-          ports: c.Ports,
           run: c.State === 'running',
           running: false,
-          machineName: machineName
+          machineName: machineName,
+          Ports: c.Ports.map((p: any) => {
+            return {
+              in: p.container_port,
+              out: p.host_port
+            }
+          })
         }))
         resolve(containers)
       } catch (e: any) {
@@ -103,10 +112,10 @@ class Podman extends Base {
         const json = JSON.parse(content)
         images = json.map((img: any) => ({
           id: img.Id,
-          name: img.Repository,
+          name: img.Names,
           tag: img.Tag,
-          size: img.Size,
-          created: img.Created
+          size: Number(img.Size),
+          created: img.CreatedAt
         }))
         resolve(images)
       } catch (e: any) {
@@ -350,6 +359,12 @@ class Podman extends Base {
           await remove(tmp)
         }
       }
+    })
+  }
+
+  composeImageVersion(image: string) {
+    return new ForkPromise(async (resolve, reject) => {
+      fetchTags(image).then(resolve).catch(reject)
     })
   }
 }

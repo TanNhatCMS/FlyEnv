@@ -1,10 +1,9 @@
+import { reactive } from 'vue'
 import IPC from '@/util/IPC'
 import { Machine } from '@/components/Podman/class/Machine'
 import { Compose } from '@/components/Podman/class/Compose'
 import XTerm from '@/util/XTerm'
 import { reactiveBind } from '@/util/Index'
-import type { AllAppModule } from '@/core/type'
-import { reactive } from 'vue'
 import { StorageGetAsync, StorageSetAsync } from '@/util/Storage'
 
 class Podman {
@@ -14,7 +13,7 @@ class Podman {
   inited: boolean = false
   loading: boolean = false
   tab: string = ''
-  imageVersion: Partial<Record<AllAppModule, string[]>> = {}
+  imageVersion: Partial<Record<string, string[]>> = {}
 
   installEnd: boolean = false
   installing: boolean = false
@@ -51,7 +50,7 @@ class Podman {
       return
     }
     this.initImageVersion()
-    this.loading = true
+    PodmanManager.loadComposeList().catch()
     IPC.send('app-fork:podman', 'podmanInit').then((key: string, res: any) => {
       IPC.off(key)
       if (res?.code === 0) {

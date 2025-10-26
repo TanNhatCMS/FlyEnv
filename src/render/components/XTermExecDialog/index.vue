@@ -3,6 +3,7 @@
     v-model="show"
     :title="title"
     class="el-dialog-content-flex-1 app-xterm-exec-dialog"
+    :close-on-click-modal="false"
     @closed="closedFn"
     @open="onOpen"
   >
@@ -35,6 +36,7 @@
   const props = defineProps<{
     title: string
     item: XTermExec
+    exitOnClose: boolean
   }>()
 
   const xtermDom = ref<HTMLElement>()
@@ -62,6 +64,9 @@
 
   onBeforeUnmount(() => {
     props.item.unmount()
+    if (props.exitOnClose) {
+      props.item.taskCancel()
+    }
   })
 
   defineExpose({

@@ -65,19 +65,17 @@
             </template>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item
-                  v-if="scope.row.run"
-                  :disabled="scope.row.running"
-                  @click.stop="scope.row.stopWithTerminal()"
-                >
+                <el-dropdown-item v-if="scope.row.run" @click.stop="scope.row.stopWithTerminal()">
                   {{ I18nT('podman.StopWithTerminal') }}
                 </el-dropdown-item>
-                <el-dropdown-item
-                  v-else
-                  :disabled="scope.row.running"
-                  @click.stop="scope.row.startWithTerminal()"
-                >
+                <el-dropdown-item v-else @click.stop="scope.row.startWithTerminal()">
                   {{ I18nT('podman.StartWithTerminal') }}
+                </el-dropdown-item>
+                <el-dropdown-item @click.stop="scope.row.showLogsWithTerminal()">
+                  {{ I18nT('base.log') }}
+                </el-dropdown-item>
+                <el-dropdown-item @click.stop="addCompose(scope.row)">
+                  {{ I18nT('base.edit') }}
                 </el-dropdown-item>
                 <template v-for="(f, _i) in scope.row.paths" :key="_i">
                   <el-dropdown-item @click.stop="toEditFile(f)">
@@ -138,7 +136,7 @@
   }
 
   let ConfigVM: any
-  import('./config.vue').then((res) => {
+  import('../config.vue').then((res) => {
     ConfigVM = res.default
   })
 
