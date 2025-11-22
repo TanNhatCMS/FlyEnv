@@ -3,7 +3,7 @@ import { resolve as pathResolve, join } from 'path'
 import _fs from 'fs-extra'
 import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
-import { isLinux, isMacOS, isWindows } from '../src/shared/utils'
+import { isLinux, isMacOS, isWindows } from '@shared/utils'
 import { moveChildDirToParent } from '../src/fork/util/Dir'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))

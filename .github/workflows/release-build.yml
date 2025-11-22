@@ -9,6 +9,12 @@ jobs:
     name: Build (${{ matrix.os }} • ${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
+    env:
+      # Nếu release là prerelease → beta, ngược lại → stable
+      APP_CHANNEL: ${{ github.event.release.prerelease && 'beta' || 'stable' }}
+      # Option: nếu sau này bạn muốn dùng để cấu hình auto-update
+      ALLOW_BETA_UPDATE: ${{ github.event.release.prerelease && 'true' || 'false' }}
+
     strategy:
       fail-fast: false
       matrix:
