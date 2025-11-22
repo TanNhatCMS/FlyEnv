@@ -182,6 +182,10 @@
               <yb-icon :svg="import('@/svg/config.svg?raw')" width="17" height="17" />
               <span class="ml-3">{{ I18nT('php.editPhpIni') }}</span>
             </li>
+            <li @click.stop="action(scope.row, scope.$index, 'log-error')">
+              <yb-icon :svg="import('@/svg/log.svg?raw')" width="17" height="17" />
+              <span class="ml-3">{{ I18nT('base.errorLog') }}</span>
+            </li>
             <template v-if="!isWindows">
               <li @click.stop="action(scope.row, scope.$index, 'fpm-conf')">
                 <yb-icon :svg="import('@/svg/config.svg?raw')" width="17" height="17" />
@@ -255,6 +259,11 @@
     LogVM = res.default
   })
 
+  let LogErrorVM: any
+  import('./ErrorLog.vue').then((res) => {
+    LogErrorVM = res.default
+  })
+
   const action = (item: SoftInstalled, index: number, flag: string) => {
     switch (flag) {
       case 'groupstart':
@@ -271,6 +280,11 @@
       case 'fpm-conf':
         AsyncComponentShow(PhpFpmVM, {
           item
+        }).then()
+        break
+      case 'log-error':
+        AsyncComponentShow(LogErrorVM, {
+          version: item
         }).then()
         break
       case 'log-fpm':

@@ -35,7 +35,7 @@
             <el-radio-button value="Container" :label="I18nT('podman.Container')"></el-radio-button>
           </el-radio-group>
         </div>
-        <el-button class="button" :disabled="machine.running" link @click="refetchInfo">
+        <el-button class="button" :disabled="refreshDisabled" link @click="doRefresh">
           <yb-icon
             :svg="import('@/svg/icon_refresh.svg?raw')"
             class="refresh-icon w-[24px] h-[24px]"
@@ -61,6 +61,9 @@
         <template v-else-if="machine.tab === 'Image'">
           <ImageVM />
         </template>
+        <template v-else-if="machine.tab === 'Container'">
+          <ContainerVM />
+        </template>
         <!-- 其它 tab 可继续补充 -->
       </template>
     </template>
@@ -73,19 +76,34 @@
   import DashboradVM from './dashboard.vue'
   import ImageVM from './image/image.vue'
   import ComposeVM from './compose/compose.vue'
+  import ContainerVM from './container/container.vue'
 
   const machine = computed(() => {
     return PodmanManager.machine.find((m) => m.name === PodmanManager.tab)
   })
 
-  const refetchInfo = () => {
-    if (!machine?.value) {
-      return
+  const refreshDisabled = computed(() => {
+    if (machine.value?.tab === 'Dashboard') {
+      return machine.value.DashboardFetching
+    } else if (machine.value?.tab === 'Compose') {
+      return PodmanManager.ComposeFetching
+    } else if (machine.value?.tab === 'Image') {
+      return machine.value.ImageFetching
+    } else if (machine.value?.tab === 'Container') {
+      return machine.value.ContainerFetching
     }
-    if (machine?.value?.running) {
-      return
+    return true
+  })
+
+  const doRefresh = () => {
+    if (machine.value?.tab === 'Dashboard') {
+      machine.value.fetchInfoAndContainer()
+    } else if (machine.value?.tab === 'Compose') {
+      PodmanManager.refreshComposeState()
+    } else if (machine.value?.tab === 'Image') {
+      machine.value.fetchImages()
+    } else if (machine.value?.tab === 'Container') {
+      machine.value.fetchContainers()
     }
-    machine.value.fetched = false
-    machine.value.fetchInfoAndContainer()
   }
 </script>

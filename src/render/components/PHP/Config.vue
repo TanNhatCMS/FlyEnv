@@ -11,7 +11,9 @@
       <div class="nav pl-3 pr-5">
         <div class="left" @click="show = false">
           <yb-icon :svg="import('@/svg/delete.svg?raw')" class="top-back-icon" />
-          <span class="ml-3 title">{{ version.version }} - {{ version.path }} - php.ini</span>
+          <span class="ml-3 title truncate"
+            >php.ini - {{ version.version }} - {{ version.path }}</span
+          >
         </div>
       </div>
 
@@ -44,8 +46,8 @@
   import { AsyncComponentSetup } from '@/util/AsyncComponent'
   import { uuid } from '@/util/Index'
   import { join } from '@/util/path-browserify'
-  import { fs } from '@/util/NodeFn'
   import { IniParse } from '@/util/IniParse'
+  import { asyncComputed } from '@vueuse/core'
 
   const props = defineProps<{
     version: SoftInstalled
@@ -59,8 +61,30 @@
 
   const conf = ref()
   const commonSetting: Ref<CommonSetItem[]> = ref([])
-  const file = computed(() => {
-    return ConfStore.phpIniFiles?.[flag?.value] ?? ''
+
+  const fetchIniFile = () => {
+    return new Promise((resolve) => {
+      IPC.send('app-fork:php', 'getIniPath', JSON.parse(JSON.stringify(props.version))).then(
+        (key: string, res: any) => {
+          console.log(res)
+          IPC.off(key)
+          if (res.code === 0) {
+            ConfStore.phpIniFiles[flag.value] = res.data
+            ConfStore.save()
+            resolve(res.data)
+            return
+          }
+          resolve('')
+        }
+      )
+    })
+  }
+
+  const file = asyncComputed(async () => {
+    if (ConfStore.phpIniFiles?.[flag?.value]) {
+      return ConfStore.phpIniFiles?.[flag?.value]
+    }
+    return await fetchIniFile()
   })
   const defaultFile = computed(() => {
     if (!file.value) {
@@ -70,6 +94,35 @@
   })
   const cacert = join(window.Server.BaseDir!, 'CA/cacert.pem')
   const names: CommonSetItem[] = [
+    {
+      section: 'PHP',
+      name: 'log_errors',
+      value: 'On',
+      enable: true,
+      options: [
+        {
+          value: 'Off',
+          label: 'Off'
+        },
+        {
+          value: 'On',
+          label: 'On'
+        }
+      ],
+      tips() {
+        return I18nT('php.log_errors')
+      }
+    },
+    {
+      section: 'PHP',
+      name: 'error_log',
+      isFile: true,
+      value: '',
+      enable: true,
+      tips() {
+        return I18nT('php.error_log_dir')
+      }
+    },
     {
       section: 'PHP',
       name: 'display_errors',
@@ -306,33 +359,6 @@
       editConfig = config
       getCommonSetting()
     }
-  }
-
-  const fileExists = ref(false)
-  watch(
-    file,
-    (val) => {
-      fs.existsSync(val).then((res) => {
-        fileExists.value = res
-      })
-    },
-    {
-      immediate: true
-    }
-  )
-
-  if (flag.value && (!file.value || !fileExists.value)) {
-    IPC.send('app-fork:php', 'getIniPath', JSON.parse(JSON.stringify(props.version))).then(
-      (key: string, res: any) => {
-        console.log(res)
-        IPC.off(key)
-        if (res.code === 0) {
-          ConfStore.phpIniFiles[flag.value] = res.data
-          ConfStore.save()
-          conf?.value?.update()
-        }
-      }
-    )
   }
 
   IPC.send('app-fork:php', 'initCACertPEM').then((key: string) => {

@@ -110,6 +110,10 @@
   "placeholderSearch": "Tìm kiếm",
   "projects": "Dự án",
   "cleanup": "Dọn dẹp",
+  "preview": "Xem trước",
+  "executing": "Đang thực thi",
+  "info": "Thông tin",
+  "ForceDelete": "Xóa bắt buộc",
   "autoCheck": "Kiểm tra tự động",
   "allowPrerelease": "Cho phép bản phát hành trước"
 }

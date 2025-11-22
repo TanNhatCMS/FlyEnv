@@ -5,6 +5,10 @@ import { Compose } from '@/components/Podman/class/Compose'
 import XTerm from '@/util/XTerm'
 import { reactiveBind } from '@/util/Index'
 import { StorageGetAsync, StorageSetAsync } from '@/util/Storage'
+import { XTermExec, XTermExecCache } from '@/util/XTermExec'
+import { AsyncComponentShow } from '@/util/AsyncComponent'
+import { I18nT } from '@lang/index'
+import { ElMessageBox } from 'element-plus'
 
 class Podman {
   machine: Machine[] = []
@@ -18,6 +22,11 @@ class Podman {
   installEnd: boolean = false
   installing: boolean = false
   xterm: XTerm | undefined
+
+  dockerComposeExists: boolean = false
+  dockerComposeInstalling: boolean = false
+
+  ComposeFetching = false
 
   onMachineRemove(item: Machine) {
     this.machine = this.machine.filter((f) => f.name !== item.name)
@@ -50,6 +59,7 @@ class Podman {
       return
     }
     this.initImageVersion()
+    this.checkIsComposeExists()
     PodmanManager.loadComposeList().catch()
     IPC.send('app-fork:podman', 'podmanInit').then((key: string, res: any) => {
       IPC.off(key)
@@ -62,9 +72,13 @@ class Podman {
           const machine = reactiveBind(new Machine(item))
           machine._onRemove = this.onMachineRemove
           this.machine.push(machine)
-          if (!this.tab) {
-            this.tab = machine.name
+        }
+        const machine = this.machine.find((m) => m.run) ?? this.machine?.[0]
+        if (machine) {
+          this.tab = machine.name
+          if (machine.run) {
             machine.fetchInfoAndContainer()
+            this.refreshComposeState()
           }
         }
       } else {
@@ -87,6 +101,8 @@ class Podman {
   }
 
   async loadComposeList() {
+    this.ComposeFetching = true
+    const all = []
     const storeKey = 'flyenv-podman-compose-list'
     try {
       const arr = await StorageGetAsync(storeKey)
@@ -94,12 +110,30 @@ class Podman {
       if (Array.isArray(arr)) {
         for (const item of arr) {
           const compose = reactiveBind(new Compose(item))
+          all.push(compose.checkRunningStatus())
           this.compose.push(compose)
         }
       }
     } catch {
       this.compose = []
     }
+    if (all.length === 0) {
+      this.ComposeFetching = false
+    } else {
+      await Promise.all(all)
+      this.ComposeFetching = false
+    }
+  }
+
+  refreshComposeState() {
+    if (this.ComposeFetching || !this.compose.length) {
+      return
+    }
+    this.ComposeFetching = true
+    const all = this.compose.map((item) => item.checkRunningStatus())
+    Promise.all(all).finally(() => {
+      this.ComposeFetching = false
+    })
   }
 
   async saveComposeList() {
@@ -115,8 +149,14 @@ class Podman {
   }
 
   removeCompose(item: Compose) {
-    this.compose = this.compose.filter((f) => f.id !== item.id)
-    this.saveComposeList().catch()
+    ElMessageBox.confirm(I18nT('base.delAlertContent'), I18nT('host.warning'), {
+      confirmButtonText: I18nT('base.confirm'),
+      cancelButtonText: I18nT('base.cancel'),
+      type: 'warning'
+    }).then(() => {
+      this.compose = this.compose.filter((f) => f.id !== item.id)
+      this.saveComposeList().catch()
+    })
   }
 
   updateCompose(item: Compose) {
@@ -125,6 +165,65 @@ class Podman {
       this.compose[idx] = item
       this.saveComposeList().catch()
     }
+  }
+
+  currentMachine() {
+    return this.machine.find((m) => m.name === this.tab)
+  }
+
+  currentSocket() {
+    return this.currentMachine()?.info?.ConnectionInfo?.PodmanSocket?.Path
+  }
+
+  checkIsComposeExists() {
+    IPC.send('app-fork:podman', 'checkIsComposeExists').then((key: string, res: any) => {
+      IPC.off(key)
+      if (res?.code === 0) {
+        this.dockerComposeExists = true
+      } else {
+        this.dockerComposeExists = false
+      }
+    })
+  }
+
+  installDockerCompose() {
+    const id = 'App-Podman-DockerCompose-Install'
+    if (this.dockerComposeInstalling) {
+      const xtermExec = XTermExecCache?.[id]
+      if (xtermExec) {
+        import('@/components/XTermExecDialog/index.vue').then((res) => {
+          AsyncComponentShow(res.default, {
+            title: xtermExec.title,
+            item: xtermExec
+          }).then(() => {
+            this.checkIsComposeExists()
+          })
+        })
+      }
+      return
+    }
+
+    this.dockerComposeInstalling = true
+    let xtermExec = XTermExecCache?.[id]
+    if (!xtermExec) {
+      xtermExec = reactiveBind(new XTermExec())
+      xtermExec.id = id
+      const arr: string[] = ['brew install docker-compose']
+      xtermExec.cammand = [arr.join(' ')]
+      xtermExec.wait().then(() => {
+        delete XTermExecCache?.[id]
+        this.checkIsComposeExists()
+      })
+      XTermExecCache[id] = xtermExec
+    }
+    import('@/components/XTermExecDialog/index.vue').then((res) => {
+      AsyncComponentShow(res.default, {
+        title: I18nT('podman.DockerComposeInstallButton'),
+        item: xtermExec
+      }).then(() => {
+        this.checkIsComposeExists()
+      })
+    })
   }
 }
 

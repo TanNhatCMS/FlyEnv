@@ -72,7 +72,7 @@ class Podman extends Base {
         containers = json.map((c: any) => ({
           id: c.Id,
           name: c.Names,
-          image: c.Image,
+          Image: c.Image,
           ImageID: c.ImageID,
           Mounts: c.Mounts,
           Networks: c.Networks,
@@ -299,15 +299,19 @@ class Podman extends Base {
     })
   }
 
-  composeStart(paths: string[], projectName: string) {
+  composeStart(paths: string[], projectName: string, socket?: string) {
     return new ForkPromise(async (resolve, reject) => {
       const arr: string[] = ['docker-compose', ...paths.map((p) => `-f "${p}"`)]
       if (projectName) {
         arr.push(`-p ${projectName}`)
       }
       arr.push('up -d')
+      const env: any = {}
+      if (!isWindows() && socket) {
+        env.DOCKER_HOST = `unix://${socket}`
+      }
       try {
-        await execPromiseWithEnv(arr.join(' '))
+        await execPromiseWithEnv(arr.join(' '), { env })
         resolve(true)
       } catch (e: any) {
         reject(e?.message ?? 'fail')
@@ -315,15 +319,19 @@ class Podman extends Base {
     })
   }
 
-  composeStop(paths: string[], projectName: string) {
+  composeStop(paths: string[], projectName: string, socket?: string) {
     return new ForkPromise(async (resolve, reject) => {
       const arr: string[] = ['docker-compose', ...paths.map((p) => `-f "${p}"`)]
       if (projectName) {
         arr.push(`-p ${projectName}`)
       }
       arr.push('down')
+      const env: any = {}
+      if (!isWindows() && socket) {
+        env.DOCKER_HOST = `unix://${socket}`
+      }
       try {
-        await execPromiseWithEnv(arr.join(' '))
+        await execPromiseWithEnv(arr.join(' '), { env })
         resolve(true)
       } catch (e: any) {
         reject(e?.message ?? 'fail')
@@ -331,8 +339,20 @@ class Podman extends Base {
     })
   }
 
+  checkIsComposeExists() {
+    return new ForkPromise(async (resolve, reject) => {
+      try {
+        const command = 'docker-compose --version'
+        await execPromiseWithEnv(command)
+        resolve(true)
+      } catch (err: any) {
+        reject(err?.message ?? 'fail')
+      }
+    })
+  }
+
   // 假设 composeName 是你的 compose 项目名（通常是 Pod 名）
-  isComposeRunning(paths: string[], projectName: string) {
+  isComposeRunning(paths: string[], projectName: string, socket?: string) {
     return new ForkPromise(async (resolve, reject) => {
       const tmp = join(tmpdir(), `${uuid()}.txt`)
       const list: string[] = ['docker-compose', ...paths.map((p) => `-f "${p}"`)]
@@ -340,8 +360,13 @@ class Podman extends Base {
         list.push(`-p ${projectName}`)
       }
       list.push('ps --format json')
+      const env: any = {}
+      if (!isWindows() && socket) {
+        env.DOCKER_HOST = `unix://${socket}`
+      }
+      console.log('isComposeRunning env: ', { env })
       try {
-        await execPromiseWithEnv(`${list.join(' ')} > "${tmp}" ${getRedirect()}`)
+        await execPromiseWithEnv(`${list.join(' ')} > "${tmp}" ${getRedirect()}`, { env })
         const content = await readFile(tmp, 'utf-8')
         const arr = content.split('\n').filter((f) => {
           let json: any
@@ -352,6 +377,53 @@ class Podman extends Base {
         })
         console.log('isComposeRunning arr: ', arr)
         resolve(arr.length > 0)
+      } catch (e: any) {
+        console.error('isComposeRunning error: ', e)
+        reject(e?.message ?? 'fail')
+      } finally {
+        if (existsSync(tmp)) {
+          await remove(tmp)
+        }
+      }
+    })
+  }
+
+  isContainerRunning(containerName: string, machineName: string) {
+    return new ForkPromise(async (resolve, reject) => {
+      const tmp = join(tmpdir(), `${uuid()}.txt`)
+      const cmd = isLinux()
+        ? `podman inspect ${containerName} --format json > "${tmp}"`
+        : `podman --connection ${machineName} inspect ${containerName} --format json > "${tmp}"`
+      try {
+        await execPromiseWithEnv(cmd)
+        const content = await readFile(tmp, 'utf-8')
+        const arr = JSON.parse(content)
+        console.log('isContainerRunning arr: ', arr)
+        const item: any = arr.shift()
+        console.log('isContainerRunning item: ', item)
+        resolve(item?.State?.Status === 'running')
+      } catch (e: any) {
+        reject(e?.message ?? 'fail')
+      } finally {
+        if (existsSync(tmp)) {
+          await remove(tmp)
+        }
+      }
+    })
+  }
+
+  fetchContainerInfo(id: string, machineName: string) {
+    return new ForkPromise(async (resolve, reject) => {
+      const tmp = join(tmpdir(), `${uuid()}.txt`)
+      const cmd = isLinux()
+        ? `podman inspect ${id} --format json > "${tmp}"`
+        : `podman --connection ${machineName} inspect ${id} --format json > "${tmp}"`
+      try {
+        await execPromiseWithEnv(cmd)
+        const content = await readFile(tmp, 'utf-8')
+        const arr = JSON.parse(content)
+        const item: any = arr.shift()
+        resolve(item)
       } catch (e: any) {
         reject(e?.message ?? 'fail')
       } finally {

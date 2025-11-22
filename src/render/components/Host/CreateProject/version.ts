@@ -166,6 +166,42 @@ const version = {
         version: '3.*'
       }
     ]
+  },
+  ClassicPress: {
+    url: 'https://packagist.org/packages/classicpress/classicpress',
+    package: 'classicpress/classicpress',
+    list: [
+      {
+        name: 'classicpress latest',
+        version: '*'
+      },
+      {
+        name: 'classicpress 2',
+        version: '2.*'
+      },
+      {
+        name: 'classicpress 1',
+        version: '1.*'
+      }
+    ]
+  },
+  Contao: {
+    url: 'https://contao.org/',
+    package: 'contao/managed-edition',
+    list: [
+      {
+        name: 'contao latest',
+        version: '*'
+      },
+      {
+        name: 'contao 5',
+        version: '5.*'
+      },
+      {
+        name: 'contao 4',
+        version: '4.*'
+      }
+    ]
   }
 }
 export default version

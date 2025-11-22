@@ -100,6 +100,7 @@ export class XTerm implements XTermType {
            */
           IPC.on(`NodePty:data:${this.ptyKey}`).then((key: string, data: string) => {
             this.write(data)
+            this.xterm?.focus?.()
           })
 
           doMount()
@@ -125,6 +126,7 @@ export class XTerm implements XTermType {
       if (this.end) {
         return
       }
+      console.log('xterm onData: ', data)
       IPC.send('NodePty:write', this.ptyKey, data).then((key: string) => {
         IPC.off(key)
       })
@@ -143,6 +145,12 @@ export class XTerm implements XTermType {
         this.xterm?.write(log)
       }
     }
+  }
+
+  writeToNodePty(data: string) {
+    IPC.send('NodePty:write', this.ptyKey, data).then((key: string) => {
+      IPC.off(key)
+    })
   }
 
   write(data: string) {
@@ -219,7 +227,7 @@ export class XTerm implements XTermType {
     })
   }
 
-  send(command: string[]) {
+  send(command: string[], execUseOneFile = true) {
     console.log('XTerm send:', command)
     if (this.end) {
       return
@@ -227,14 +235,16 @@ export class XTerm implements XTermType {
     return new Promise((resolve) => {
       this.resolve = resolve
       const param = [...command]
-      if (window.Server.isWindows) {
-        param.push(`echo "Task-${this.ptyKey}-End"`)
-        param.push(`exit 0`)
-      } else {
-        param.push(`wait;`)
-        param.push(`echo "Task-${this.ptyKey}-END" && exit 0;`)
+      if (execUseOneFile) {
+        if (window.Server.isWindows) {
+          param.push(`echo "Task-${this.ptyKey}-End"`)
+          param.push(`exit 0`)
+        } else {
+          param.push(`wait;`)
+          param.push(`echo "Task-${this.ptyKey}-END" && exit 0;`)
+        }
       }
-      IPC.send('NodePty:exec', this.ptyKey, param).then((key: string) => {
+      IPC.send('NodePty:exec', this.ptyKey, param, execUseOneFile).then((key: string) => {
         console.log('static command finished: ', command)
         IPC.off(key)
         this.end = true

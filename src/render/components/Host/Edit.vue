@@ -90,7 +90,7 @@
               >
                 <el-option :value="undefined" :label="I18nT('host.staticSite')"></el-option>
                 <template v-for="(v, _i) in phpVersions" :key="_i">
-                  <el-option :value="v.num" :label="v.num"></el-option>
+                  <el-option :value="v.num" :label="v.version"></el-option>
                 </template>
               </el-select>
             </div>
@@ -319,7 +319,7 @@
   })
   const phpVersions = computed(() => {
     const set: Set<number> = new Set()
-    return (
+    const arr =
       php?.value?.installed?.filter((p) => {
         if (p.version && p.num) {
           if (!set.has(p.num)) {
@@ -330,7 +330,12 @@
         }
         return false
       }) ?? []
-    )
+    return arr.map((p) => {
+      return {
+        ...p,
+        version: p.version.split('.').slice(0, 2).join('.')
+      }
+    })
   })
 
   const nginxRewriteTemplateDir = join(window.Server.BaseDir!, 'NginxRewriteTemplate')
