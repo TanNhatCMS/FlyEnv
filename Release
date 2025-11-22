@@ -1,0 +1,24 @@
+Architectures: amd64
+Codename: stable
+Components: main
+Date: Sat, 22 Nov 2025 16:38:06 +0000
+Description: APT repo for TanNhatCMS/FlyEnv (v4.11.0)
+Label: TanNhatCMS/FlyEnv
+Origin: TanNhatCMS
+Suite: stable
+MD5Sum:
+ c5e820eea7f48c9ce875cac1788f053f              683 Packages
+ c8d97fb7eacdfc7246f4418efc8f2f90              491 Packages.gz
+ 22b47f4ce5c575ac1047728510982282              205 Release
+SHA1:
+ aeb3187a09abd13f331385c4becfcedcaef0bd1c              683 Packages
+ b83a6e34a2d3089d7183c23ca50c0d3cd09162e1              491 Packages.gz
+ 63f6bef0a914cd4e2d514620fdfb524915ac058f              205 Release
+SHA256:
+ c1fbaecf15b4a003ae10f72cda4cbe447cf20179f97af51050b9967e6e7d36bd              683 Packages
+ 6ade37136178aae44b5ab92c599b99b1955574cb83fe69691de3fd163fc966b5              491 Packages.gz
+ 598cb1e16ff63603e5f8ad0d08e9e378ff405a9fa2b02038320e15940ad5f031              205 Release
+SHA512:
+ b9fb1ca99253c86b62df8722aa1e0be1bf1c0c05b1ac1d1f9b52c4bea3e85ff231ad82f68d50dc99ff2a63c6bb2cfeed2b17c32d3f64c0ee26fe1a7a3d029e7a              683 Packages
+ 837f188f2f847658c18b563e6f94c7daf7154bed2e015619965e5aceb1689c7d892e1658bcddd194ae982104065ee45a28464f208c2d910214c979079e871dfd              491 Packages.gz
+ 4b839f3254fb40da51a70368431c9046fb3e50ccebaeaeb4e8f51151866ad912d7d356cd778e8bb12e97f67465d7efd04f94ce276651484c8cbaec9f45a092f8              205 Release
