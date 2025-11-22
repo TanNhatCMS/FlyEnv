@@ -32,6 +32,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 'stable'
+          cache-dependency-path: src/helper-go/go.sum
 
       - name: Setup Python (for node-gyp)
         uses: actions/setup-python@v5
