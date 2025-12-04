@@ -4,40 +4,38 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag version để build (ví dụ: v1.2.3). Bỏ trống = latest'
-        required: true
-        default: 'V4.10.'
+        description: 'Tag version để build (ví dụ: v1.2.3). Bỏ trống = build từ branch main'
+        required: false
+        default: ''
 
 permissions:
   contents: write
 
 jobs:
   build:
-    name: Build FlyEnv Linux • ${{ github.event.inputs.tag }} (${{ matrix.arch }})
+    name: Build FlyEnv Linux • ${{ github.event.inputs.tag || 'main' }} (${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 120
     strategy:
       matrix:
         include:
           - arch: x64
             os: ubuntu-22.04
             target: x64
-#          - arch: arm64
-#            os: ubuntu-22.04-arm
-#            target: arm64
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.tag }}
+          # Nếu không có tag input thì checkout branch dev
+          ref: ${{ github.event.inputs.tag == '' ? 'refs/heads/dev' : github.event.inputs.tag }}
 
-      - name: Setup Latest Node.js
+      - name: Setup Node.js (LTS)
         uses: actions/setup-node@v4
         with:
-          node-version: 'latest'
+          node-version: '22'
 
-      - name: Setup Go (stable)
+      - name: Setup Go Lang
         uses: actions/setup-go@v5
         with:
           go-version: 'stable'
@@ -46,32 +44,116 @@ jobs:
       - name: Install build deps (Linux)
         run: |
           sudo apt-get update
-          sudo apt-get install -y g++ make python3 python3-pip pkg-config fakeroot rpm
+          sudo apt-get install -y \
+            build-essential \
+            python3 \
+            python3-pip \
+            pkg-config \
+            fakeroot \
+            rpm \
+            dpkg-dev \
+            debhelper
           python3 -m pip install --upgrade pip
+
+      - name: Cache node-gyp & yarn cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/node-gyp
+            ~/.yarn
+            .yarn/cache
+            node_modules
+            **/node_modules
+          key: ${{ runner.os }}-${{ matrix.arch }}-yarn-${{ hashFiles('**/yarn.lock') }}
 
       - name: Install Yarn & tools
         run: |
           npm -g install yarn node-gyp
-          yarn install --frozen-lockfile
+          yarn --version
+          node -v
+          go version
 
-      - name: Build Go helper (Linux)
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build Go helper Linux
+        shell: bash
         working-directory: src/helper-go
+        env:
+          GOARCH: ${{ matrix.arch == 'x64' && 'amd64' || matrix.arch == 'arm64' && 'arm64' || 'amd64' }}
         run: |
           go mod tidy
           chmod +x ./build-os.sh
           ./build-os.sh
 
+      - name: Prepare arch env for electron build
+        run: |
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            echo "ELECTRON_ARCH=x64" >> $GITHUB_ENV
+            echo "GOARCH=amd64" >> $GITHUB_ENV
+          else
+            echo "ELECTRON_ARCH=arm64" >> $GITHUB_ENV
+            echo "GOARCH=arm64" >> $GITHUB_ENV
+          fi
+          echo "ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
+
       - name: Build Electron packages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn build
+          ELECTRON_BUILDER_ARCH: ${{ env.ELECTRON_ARCH }}
+        run: |
+          yarn build
 
-      - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
+      - name: Show release folder (debug)
+        run: |
+          echo "Release files:"
+          ls -la release || true
+          find release -maxdepth 1 -type f -print || true
+
+      - name: Check tag existence on remote
+        id: check_tag
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          # default outputs
+          echo "tag_provided=false" >> $GITHUB_OUTPUT
+          echo "tag_exists=false" >> $GITHUB_OUTPUT
+
+          if [ -z "$TAG" ]; then
+            echo "No tag provided (input empty). Will upload artifacts for manual download."
+            exit 0
+          fi
+
+          echo "Tag provided: $TAG"
+          # fetch tags from origin and check
+          git fetch --tags origin
+          if git rev-parse --verify --quiet "refs/tags/$TAG" >/dev/null; then
+            echo "tag_provided=true" >> $GITHUB_OUTPUT
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+            echo "Found tag $TAG on repo."
+          else
+            echo "tag_provided=true" >> $GITHUB_OUTPUT
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+            echo "Tag $TAG not found on repo. Will upload artifacts for manual download."
+          fi
+
+      # If tag provided and exists -> attach to release (create/update release by tag)
+      - name: Upload artifacts to GitHub Release (tag exists)
+        if: steps.check_tag.outputs.tag_provided == 'true' && steps.check_tag.outputs.tag_exists == 'true'
+        uses: softprops/action-gh-release@v1
         with:
-          name: linux-${{ github.event.inputs.tag }}
-          path: |
+          tag_name: ${{ github.event.inputs.tag }}
+          files: |
             release/*.deb
             release/*.rpm
-            release/*.yml
             release/*.blockmap
+            release/latest-linux.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Otherwise upload as workflow artifacts for manual download
+      - name: Upload artifacts for manual download (no tag)
+        if: steps.check_tag.outputs.tag_provided != 'true' || steps.check_tag.outputs.tag_exists != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: flyenv-linux-${{ matrix.arch }}-release
+          path: release/*
