@@ -1,6 +1,6 @@
 import type { Rectangle } from 'electron'
 import { desktopCapturer, screen, BrowserWindow, globalShortcut } from 'electron'
-import { windowManager, Window } from '@xpf0000/node-window-manager'
+// import { windowManager, Window } from '@xpf0000/node-window-manager'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve as PathResolve, join } from 'node:path'
 import is from 'electron-is'
@@ -78,19 +78,19 @@ export class Capturer {
   }
 
   getWindowCapturer(id: number) {
-    const image = windowManager.captureWindow(id)
-    console.log('getWindowCapturer image: ', image)
-    if (image) {
-      this.window?.webContents?.send?.(
-        'command',
-        'APP:Capturer-Window-Image-Get',
-        'APP:Capturer-Window-Image-Get',
-        {
-          id,
-          image
-        }
-      )
-    }
+    // const image = windowManager.captureWindow(id)
+    // console.log('getWindowCapturer image: ', image)
+    // if (image) {
+    //   this.window?.webContents?.send?.(
+    //     'command',
+    //     'APP:Capturer-Window-Image-Get',
+    //     'APP:Capturer-Window-Image-Get',
+    //     {
+    //       id,
+    //       image
+    //     }
+    //   )
+    // }
   }
 
   async initWatchPointWindow() {
@@ -99,29 +99,29 @@ export class Capturer {
     clearInterval(this.timer)
     this.windows = {}
 
-    let base64Image = ''
+    // let base64Image = ''
     const title = 'FlyEnv-Capturer-Window-I3MCDmGbp2IJy9T69RHFs7p0mwGg1WHB'
     const display = screen.getPrimaryDisplay()
     console.log('scaleFactor: ', display.scaleFactor)
     console.log('原始bounds:', display.bounds)
-    let screenRect = undefined
+    // let screenRect = undefined
 
     if (isWindows()) {
-      const deskID = windowManager.getDesktopWindowID()
-      base64Image = windowManager.captureWindow(deskID)
-      const desk = new Window(deskID)
-      screenRect = desk.getBounds()
-      console.log('Desktop Bounds:', screenRect)
+      // const deskID = windowManager.getDesktopWindowID()
+      // base64Image = windowManager.captureWindow(deskID)
+      // const desk = new Window(deskID)
+      // screenRect = desk.getBounds()
+      // console.log('Desktop Bounds:', screenRect)
     } else {
-      const sources = await desktopCapturer.getSources({
-        types: ['screen'],
-        thumbnailSize: {
-          width: Math.floor(display.bounds.width * display.scaleFactor),
-          height: Math.floor(display.bounds.height * display.scaleFactor)
-        }
-      })
-      const image = sources[0].thumbnail
-      base64Image = image.toDataURL()
+      // const sources = await desktopCapturer.getSources({
+      //   types: ['screen'],
+      //   thumbnailSize: {
+      //     width: Math.floor(display.bounds.width * display.scaleFactor),
+      //     height: Math.floor(display.bounds.height * display.scaleFactor)
+      //   }
+      // })
+      // const image = sources[0].thumbnail
+      // base64Image = image.toDataURL()
     }
 
     const init = (window: BrowserWindow) => {
@@ -134,26 +134,26 @@ export class Capturer {
       }, 100)
       window.focus()
       window.moveTop()
-      window.webContents?.send?.(
-        'command',
-        'APP:Capturer-Window-Screen-Image-Update',
-        'APP:Capturer-Window-Screen-Image-Update',
-        {
-          image: base64Image,
-          screenRect
-        }
-      )
+      // window.webContents?.send?.(
+      //   'command',
+      //   'APP:Capturer-Window-Screen-Image-Update',
+      //   'APP:Capturer-Window-Screen-Image-Update',
+      //   {
+      //     image: base64Image,
+      //     screenRect
+      //   }
+      // )
       if (!this.capturerWindowID) {
-        const all = windowManager.getWindows()
-        const find = all.find((a) => a.getName().includes(title))
-        this.capturerWindow = find
-        const activeId = find?.id ?? 0
-        console.log('find: ', activeId, find?.getName())
-        this.capturerWindowID = activeId
+        // const all = windowManager.getWindows()
+        // const find = all.find((a) => a.getName().includes(title))
+        // this.capturerWindow = find
+        // const activeId = find?.id ?? 0
+        // console.log('find: ', activeId, find?.getName())
+        // this.capturerWindowID = activeId
       }
       if (!this.isFullScreen && isWindows()) {
         this.isFullScreen = true
-        this.capturerWindow?.setFullScreen()
+        // this.capturerWindow?.setFullScreen()
       }
       this.timer = setInterval(() => {
         const point = screen.getCursorScreenPoint()
@@ -162,56 +162,56 @@ export class Capturer {
         }
         this.currentPoint.x = point.x
         this.currentPoint.y = point.y
-        const pointWindow = windowManager.getWindowAtPoint(point.x, point.y, this.capturerWindowID)
-        console.log(
-          'getWindowAtPoint: ',
-          pointWindow.id,
-          pointWindow.getTitle(),
-          pointWindow.getName()
-        )
-        if (pointWindow.id) {
-          let item = this.windows?.[pointWindow.id]
-          console.log('getWindowAtPoint item: ', item)
-          if (!item) {
-            const bounds: Rectangle = pointWindow.getBounds() as any
-            const name = pointWindow.getName()
-            if (isWindows()) {
-              bounds.x /= display.scaleFactor
-              bounds.y /= display.scaleFactor
-              bounds.width /= display.scaleFactor
-              bounds.height /= display.scaleFactor
-            }
-            item = {
-              id: pointWindow.id,
-              bounds,
-              name
-            }
-            this.windows[pointWindow.id] = item
-          }
-          window.webContents?.send?.(
-            'command',
-            'APP:Capturer-Window-Rect-Update',
-            'APP:Capturer-Window-Rect-Update',
-            JSON.parse(JSON.stringify(item))
-          )
-        } else {
-          const item = {
-            id: 0,
-            bounds: {
-              x: 0,
-              y: 0,
-              width: display.bounds.width,
-              height: display.bounds.height
-            },
-            name: 'Full Screen'
-          }
-          window.webContents?.send?.(
-            'command',
-            'APP:Capturer-Window-Rect-Update',
-            'APP:Capturer-Window-Rect-Update',
-            item
-          )
-        }
+        // const pointWindow = windowManager.getWindowAtPoint(point.x, point.y, this.capturerWindowID)
+        // console.log(
+        //   'getWindowAtPoint: ',
+        //   pointWindow.id,
+        //   pointWindow.getTitle(),
+        //   pointWindow.getName()
+        // )
+        // if (pointWindow.id) {
+        //   let item = this.windows?.[pointWindow.id]
+        //   console.log('getWindowAtPoint item: ', item)
+        //   if (!item) {
+        //     const bounds: Rectangle = pointWindow.getBounds() as any
+        //     const name = pointWindow.getName()
+        //     if (isWindows()) {
+        //       bounds.x /= display.scaleFactor
+        //       bounds.y /= display.scaleFactor
+        //       bounds.width /= display.scaleFactor
+        //       bounds.height /= display.scaleFactor
+        //     }
+        //     item = {
+        //       id: pointWindow.id,
+        //       bounds,
+        //       name
+        //     }
+        //     this.windows[pointWindow.id] = item
+        //   }
+        //   window.webContents?.send?.(
+        //     'command',
+        //     'APP:Capturer-Window-Rect-Update',
+        //     'APP:Capturer-Window-Rect-Update',
+        //     JSON.parse(JSON.stringify(item))
+        //   )
+        // } else {
+        //   const item = {
+        //     id: 0,
+        //     bounds: {
+        //       x: 0,
+        //       y: 0,
+        //       width: display.bounds.width,
+        //       height: display.bounds.height
+        //     },
+        //     name: 'Full Screen'
+        //   }
+        //   window.webContents?.send?.(
+        //     'command',
+        //     'APP:Capturer-Window-Rect-Update',
+        //     'APP:Capturer-Window-Rect-Update',
+        //     item
+        //   )
+        // }
       }, 150)
     }
 
@@ -261,7 +261,7 @@ export class Capturer {
       console.log('window show !!!!!!')
       if (!this.isFullScreen && isWindows()) {
         this.isFullScreen = true
-        this.capturerWindow?.setFullScreen()
+        // this.capturerWindow?.setFullScreen()
       }
     })
     this.window = window
