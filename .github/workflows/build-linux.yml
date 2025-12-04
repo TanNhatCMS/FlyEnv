@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag version để build (ví dụ: v1.2.3). Bỏ trống = build từ branch main'
+        description: 'Tag version để build (ví dụ: v1.2.3). Bỏ trống = build từ branch dev'
         required: false
         default: ''
 
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   build:
-    name: Build FlyEnv Linux • ${{ github.event.inputs.tag || 'main' }} (${{ matrix.arch }})
+    name: Build FlyEnv Linux • ${{ github.event.inputs.tag || 'dev' }} (${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -27,9 +27,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # Nếu không có tag input thì checkout branch dev
-          ref: ${{ github.event.inputs.tag == '' ? 'refs/heads/dev' : github.event.inputs.tag }}
-
+          ref: ${{ github.event.inputs.tag || 'refs/heads/dev' }}
       - name: Setup Node.js (LTS)
         uses: actions/setup-node@v4
         with:
