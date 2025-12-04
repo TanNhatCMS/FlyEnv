@@ -23,16 +23,16 @@ jobs:
           - os: ubuntu-22.04
             arch: x64
             target: x64
-#          - os: ubuntu-22.04-arm
-#            arch: arm64
-#            target: arm64
+          #          - os: ubuntu-22.04-arm
+          #            arch: arm64
+          #            target: arm64
           # macOS
-#          - os: macos-latest
-#            arch: arm64
-#            target: arm64
-#          - os: macos-latest
-#            arch: x64
-#            target: x64
+          #          - os: macos-latest
+          #            arch: arm64
+          #            target: arm64
+          #          - os: macos-latest
+          #            arch: x64
+          #            target: x64
           # Windows
           - os: windows-latest
             arch: x64
@@ -42,10 +42,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Latest Node.js
+      - name: Setup Node.js (LTS)
         uses: actions/setup-node@v4
         with:
-          node-version: 'latest'
+          node-version: '22'
 
       - name: Setup Go (stable)
         uses: actions/setup-go@v4
@@ -81,7 +81,7 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           choco install -y nsis
-          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools"
+          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.Windows10SDK.19041"
           choco install make
           choco install 7zip
 
@@ -159,3 +159,4 @@ jobs:
             release/*.blockmap
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
