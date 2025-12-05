@@ -62,7 +62,7 @@ jobs:
             .yarn/cache
             node_modules
             **/node_modules
-          key: ${{ runner.os }}-${{ matrix.arch }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-${{ matrix.arch }}-yarn-${{ hashFiles('**/package.json') }}
 
       - name: Install Yarn & tools
         run: |
@@ -72,7 +72,7 @@ jobs:
           go version
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install
 
       - name: Build Go helper Linux
         shell: bash
