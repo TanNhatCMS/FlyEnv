@@ -35,9 +35,16 @@ export default class Launcher extends EventEmitter {
 
   init() {
     this.exceptionHandler = new ExceptionHandler()
+    // On Linux, always enable no-sandbox to ensure compatibility across distributions
+    // Many Linux distributions require this flag for Electron apps to run properly
+    if (isLinux()) {
+      app.commandLine.appendSwitch('no-sandbox')
+      app.commandLine.appendSwitch('disable-gpu-sandbox')
+    }
+    // Fallback: if launch flag exists (previous failed launch), also apply these flags
     if (AppStartFlagChech()) {
       app.commandLine.appendSwitch('disable-gpu-sandbox')
-      app.commandLine.appendSwitch('--no-sandbox')
+      app.commandLine.appendSwitch('no-sandbox')
     }
     if (isWindows()) {
       // 启用高 DPI 支持
