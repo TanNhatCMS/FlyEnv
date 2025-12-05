@@ -5,8 +5,8 @@ import PublishConfig from './publish'
 const desktop: any = {
   Name: 'FlyEnv',
   Comment: 'All-In-One Full-Stack Environment Management Tool',
-  // Exec: 'FlyEnv', // 确保这里与 executableName 一致
-  // Icon: 'com.xpf0000.flyenv', // 通常是 executableName 的小写，或者你的应用ID
+  Exec: 'FlyEnv --no-sandbox %U',
+  Icon: 'com.xpf0000.flyenv',
   Terminal: false,
   StartupNotify: true,
   Type: 'Application',
