@@ -40,9 +40,8 @@ export default class Launcher extends EventEmitter {
     if (isLinux()) {
       app.commandLine.appendSwitch('no-sandbox')
       app.commandLine.appendSwitch('disable-gpu-sandbox')
-    }
-    // Fallback: if launch flag exists (previous failed launch), also apply these flags
-    if (AppStartFlagChech()) {
+    } else if (AppStartFlagChech()) {
+      // Fallback for other platforms: if launch flag exists (previous failed launch), apply these flags
       app.commandLine.appendSwitch('disable-gpu-sandbox')
       app.commandLine.appendSwitch('no-sandbox')
     }
