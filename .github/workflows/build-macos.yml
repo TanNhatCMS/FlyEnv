@@ -13,9 +13,12 @@ permissions:
 
 jobs:
   build:
-    name: Build ${{ github.event.inputs.tag }}(macOS • arm64)
+    name: Build ${{ github.event.inputs.tag }} (macOS • ${{ matrix.arch }})
     runs-on: macos-latest
     timeout-minutes: 60
+    strategy:
+      matrix:
+        arch: [arm64]
 
     steps:
       - name: Checkout code
@@ -46,7 +49,7 @@ jobs:
             .yarn/cache
             node_modules
             **/node_modules
-          key: ${{ runner.os }}-arm64-yarn-${{ hashFiles('**/package.json') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-yarn-${{ hashFiles('**/package.json') }}
 
       - name: Install Yarn & tools
         run: |
@@ -85,7 +88,7 @@ jobs:
           echo "tag_exists=false" >> $GITHUB_OUTPUT
 
           if [ -z "$TAG" ]; then
-            echo "No tag provided (input empty). Will upload artifacts for manual download."
+            echo "No tag provided (input empty). Will upload as artifacts for manual download."
             exit 0
           fi
 
@@ -121,7 +124,7 @@ jobs:
         if: steps.check_tag.outputs.tag_provided != 'true' || steps.check_tag.outputs.tag_exists != 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: flyenv-macos-arm64-${{ github.event.inputs.tag || 'dev' }}
+          name: flyenv-macos-${{ runner.arch }}-${{ github.event.inputs.tag || 'dev' }}
           path: release/*
 
 
