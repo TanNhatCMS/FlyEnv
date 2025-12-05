@@ -20,6 +20,7 @@ const conf: Configuration = {
   electronVersion: '35.7.5',
   appId: 'com.xpf0000.flyenv',
   asar: true,
+  npmRebuild: false,
   directories: {
     output: 'release'
   },
