@@ -13,9 +13,12 @@ permissions:
 
 jobs:
   build:
-    name: Build ${{ github.event.inputs.tag }}(macOS • arm64)
+    name: Build ${{ github.event.inputs.tag }} (macOS • ${{ matrix.arch }})
     runs-on: macos-latest
     timeout-minutes: 60
+    strategy:
+      matrix:
+        arch: [arm64]
 
     steps:
       - name: Checkout code
@@ -23,10 +26,10 @@ jobs:
         with:
           ref: ${{ github.event.inputs.tag }}
 
-      - name: Setup Node.js
+      - name: Setup Node.js (LTS)
         uses: actions/setup-node@v4
         with:
-          node-version: 'latest'
+          node-version: '22'
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -37,10 +40,26 @@ jobs:
       - name: Install build deps
         run: brew update
 
-      - name: Install Yarn & deps
+      - name: Cache node-gyp & yarn cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/node-gyp
+            ~/.yarn
+            .yarn/cache
+            node_modules
+            **/node_modules
+          key: ${{ runner.os }}-${{ runner.arch }}-yarn-${{ hashFiles('**/package.json') }}
+
+      - name: Install Yarn & tools
         run: |
-          npm -g install yarn node-gyp
-          yarn install --frozen-lockfile
+          npm install -g yarn node-gyp
+          yarn --version
+          node -v
+          go version
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
 
       - name: Build Go helper
         working-directory: src/helper-go
@@ -54,16 +73,59 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: yarn build
 
-      - name: Upload macOS artifacts
+      - name: Show release folder (debug)
+        run: |
+          echo "Release files:"
+          ls -la release || true
+          find release -maxdepth 1 -type f -print || true
+
+      - name: Check tag existence on remote
+        id: check_tag
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          # default outputs
+          echo "tag_provided=false" >> $GITHUB_OUTPUT
+          echo "tag_exists=false" >> $GITHUB_OUTPUT
+
+          if [ -z "$TAG" ]; then
+            echo "No tag provided (input empty). Will upload as artifacts for manual download."
+            exit 0
+          fi
+
+          echo "Tag provided: $TAG"
+          # fetch tags from origin and check
+          git fetch --tags origin
+          if git rev-parse --verify --quiet "refs/tags/$TAG" >/dev/null; then
+            echo "tag_provided=true" >> $GITHUB_OUTPUT
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+            echo "Found tag $TAG on repo."
+          else
+            echo "tag_provided=true" >> $GITHUB_OUTPUT
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+            echo "Tag $TAG not found on repo. Will upload artifacts for manual download."
+          fi
+
+      # If tag provided and exists -> attach to release (create/update release by tag)
+      - name: Upload artifacts to GitHub Release (tag exists)
+        if: steps.check_tag.outputs.tag_provided == 'true' && steps.check_tag.outputs.tag_exists == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          files: |
+            release/*.zip
+            release/*.dmg
+            release/*.blockmap
+            release/latest-mac.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Otherwise upload as workflow artifacts for manual download
+      - name: Upload artifacts for manual download (no tag)
+        if: steps.check_tag.outputs.tag_provided != 'true' || steps.check_tag.outputs.tag_exists != 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: macos-${{ github.event.inputs.tag }}
-          path: |
-            release/*.zip
-            release/latest-mac.yml
-            release/*.blockmap
-            release/*.rpm
-            release/*.dmg
+          name: flyenv-macos-${{ runner.arch }}-${{ github.event.inputs.tag || 'dev' }}
+          path: release/*
 
 
 
