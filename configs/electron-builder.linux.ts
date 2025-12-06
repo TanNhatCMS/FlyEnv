@@ -42,6 +42,7 @@ const conf: Configuration = {
   },
   artifactName: '${productName}-${version}.${ext}', // 自定义打包文件名格式
   linux: {
+    executableName: 'FlyEnv',
     icon: 'build/icons',
     asarUnpack: ['**/*.node'],
     category: 'Development',
