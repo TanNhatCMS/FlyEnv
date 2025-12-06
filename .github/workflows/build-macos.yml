@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag version để build (ví dụ: v1.2.3). Bỏ trống = latest'
-        required: true
-        default: 'v4.10.'
+        description: 'Tag version để build (ví dụ: v1.2.3). Bỏ trống = build từ branch dev'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -24,7 +24,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.tag }}
+          ref: ${{ github.event.inputs.tag || 'refs/heads/dev' }}
 
       - name: Setup Node.js (LTS)
         uses: actions/setup-node@v4
@@ -59,7 +59,7 @@ jobs:
           go version
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install
 
       - name: Build Go helper
         working-directory: src/helper-go
