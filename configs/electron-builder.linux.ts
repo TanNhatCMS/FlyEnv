@@ -5,7 +5,6 @@ import PublishConfig from './publish'
 const desktop: any = {
   Name: 'FlyEnv',
   Comment: 'All-In-One Full-Stack Environment Management Tool',
-  Exec: '--no-sandbox %U',
   Icon: 'com.xpf0000.flyenv',
   Terminal: false,
   StartupNotify: true,
