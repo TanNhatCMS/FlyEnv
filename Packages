@@ -2,14 +2,14 @@ Package: flyenv
 Version: 4.11.1
 Architecture: amd64
 Maintainer: Pengfei Xu <250881478@qq.com>
-Installed-Size: 550259
+Installed-Size: 550189
 Depends: libgtk-3-0, libnotify4, libnss3, libxss1, libxtst6, xdg-utils, libatspi2.0-0, libuuid1, libsecret-1-0
 Recommends: libappindicator3-1
 Filename: ./pool/v4.11.1/FlyEnv-4.11.1.deb
-Size: 128500920
-MD5sum: 43bcb4824a7cabaa47736c0f7a11ef6d
-SHA1: 1a742ebe8c738f5b8e61d8ed9fd93c43c22f2acb
-SHA256: 2fda34050214c227bdb8d0322f4ce2f870cc09648fa3d829b1bc02a9ba791d51
+Size: 128423848
+MD5sum: cc73c42c7c687d9ee0f1a0ce01c3ab8f
+SHA1: 956ebaec9c6f19428223c6afbb819945b10ffdfb
+SHA256: 28b8475e75076da63147cfc5374796181bf4e388239325c824009e594ebce1fe
 Section: Development
 Priority: optional
 Homepage: https://github.com/TanNhatCMS/FlyEnv
