@@ -92,6 +92,7 @@ jobs:
   
       - name: Check tag existence on remote
         id: check_tag
+        shell: bash
         run: |
           TAG="${{ github.event.inputs.tag }}"
           # default outputs
