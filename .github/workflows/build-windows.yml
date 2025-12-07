@@ -4,29 +4,37 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag version để build (ví dụ: v1.2.3). Bỏ trống = latest'
-        required: true
-        default: 'V4.10.'
+        description: 'Tag version để build (ví dụ: v1.2.3). Bỏ trống = build từ branch dev'
+        required: false
+        default: ''
 
 permissions:
   contents: write
 
 jobs:
   build:
-    name: Build ${{ github.event.inputs.tag }}(Windows • x64)
+    name: Build Windows • ${{ github.event.inputs.tag || 'dev' }} x64
     runs-on: windows-latest
     timeout-minutes: 60
 
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            arch: x64
+            target: x64
+            
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.tag }}
+          ref: ${{ github.event.inputs.tag || 'refs/heads/dev' }}
 
-      - name: Setup Node.js
+      - name: Setup Node.js (LTS)
         uses: actions/setup-node@v4
         with:
-          node-version: 'latest'
+          node-version: '22'
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -43,17 +51,33 @@ jobs:
         shell: pwsh
         run: |
           choco install -y nsis
-          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools"
+          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.Windows10SDK.19041"
           choco install make
           choco install 7zip
+ 
+      - name: Cache node-gyp & yarn cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/node-gyp
+            ~/.yarn
+            .yarn/cache
+            node_modules
+            **/node_modules
+          key: Windows-${{ matrix.arch }}-yarn-${{ hashFiles('**/package.json') }}
 
-      - name: Install Yarn & deps
+      - name: Install Yarn & tools
         shell: pwsh
         run: |
           npm -g install yarn node-gyp
-          yarn install --frozen-lockfile
+          yarn --version
+          node -v
+          go version
 
-      - name: Build Go helper
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build Go helper Windows
         shell: pwsh
         working-directory: src/helper-go
         run: |
@@ -65,12 +89,48 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: yarn build
+  
+      - name: Check tag existence on remote
+        id: check_tag
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          # default outputs
+          echo "tag_provided=false" >> $GITHUB_OUTPUT
+          echo "tag_exists=false" >> $GITHUB_OUTPUT
 
-      - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
+          if [ -z "$TAG" ]; then
+            echo "No tag provided (input empty). Will upload artifacts for manual download."
+            exit 0
+          fi
+
+          echo "Tag provided: $TAG"
+          # fetch tags from origin and check
+          git fetch --tags origin
+          if git rev-parse --verify --quiet "refs/tags/$TAG" >/dev/null; then
+            echo "tag_provided=true" >> $GITHUB_OUTPUT
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+            echo "Found tag $TAG on repo."
+          else
+            echo "tag_provided=true" >> $GITHUB_OUTPUT
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+            echo "Tag $TAG not found on repo. Will upload artifacts for manual download."
+          fi
+          
+      - name: Upload artifacts to GitHub Release (tag exists)
+        if: steps.check_tag.outputs.tag_provided == 'true' && steps.check_tag.outputs.tag_exists == 'true'
+        uses: softprops/action-gh-release@v1
         with:
-          name: windows-${{ github.event.inputs.tag }}
-          path: |
+          tag_name: ${{ github.event.inputs.tag }}
+          files: |
             release/*.exe
             release/*.blockmap
             release/latest.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts for manual download (no tag)
+        if: steps.check_tag.outputs.tag_provided != 'true' || steps.check_tag.outputs.tag_exists != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: flyenv-windows-${{ matrix.arch }}-release
+          path: release/*
