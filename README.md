@@ -20,8 +20,8 @@ FlyEnv is an all-in-one environment management tool. Help developers quickly set
 
 FlyEnv supports **macOS**, **Windows**, and **Linux**.
 
-[![GitHub release](https://img.shields.io/github/release/xpf0000/FlyEnv.svg)](https://github.com/xpf0000/FlyEnv/releases)
-[![Total Downloads](https://img.shields.io/github/downloads/xpf0000/FlyEnv/total.svg)](https://github.com/xpf0000/FlyEnv/releases)
+[![GitHub release](https://img.shields.io/github/release/TanNhatCMS/FlyEnv.svg)](https://github.com/TanNhatCMS/FlyEnv/releases)
+[![Total Downloads](https://img.shields.io/github/downloads/TanNhatCMS/FlyEnv/total.svg)](https://github.com/TanNhatCMS/FlyEnv/releases)
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/R5R2OJXTM)
 
 ---
