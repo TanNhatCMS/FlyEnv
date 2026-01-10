@@ -93,16 +93,23 @@ jobs:
           fi
 
           echo "Tag provided: $TAG"
-          # fetch tags from origin and check
-          git fetch --tags origin
-          if git rev-parse --verify --quiet "refs/tags/$TAG" >/dev/null; then
+          # Check if tag exists locally first (from checkout)
+          if git rev-parse --verify --quiet "refs/tags/$TAG" 2>/dev/null; then
             echo "tag_provided=true" >> $GITHUB_OUTPUT
             echo "tag_exists=true" >> $GITHUB_OUTPUT
-            echo "Found tag $TAG on repo."
+            echo "Found tag $TAG locally."
           else
-            echo "tag_provided=true" >> $GITHUB_OUTPUT
-            echo "tag_exists=false" >> $GITHUB_OUTPUT
-            echo "Tag $TAG not found on repo. Will upload artifacts for manual download."
+            # Try to fetch the specific tag to avoid case-insensitive filesystem conflicts
+            echo "Tag not found locally, fetching specific tag from origin..."
+            if git fetch origin "refs/tags/$TAG:refs/tags/$TAG" 2>/dev/null; then
+              echo "tag_provided=true" >> $GITHUB_OUTPUT
+              echo "tag_exists=true" >> $GITHUB_OUTPUT
+              echo "Found and fetched tag $TAG from repo."
+            else
+              echo "tag_provided=true" >> $GITHUB_OUTPUT
+              echo "tag_exists=false" >> $GITHUB_OUTPUT
+              echo "Tag $TAG not found on repo. Will upload artifacts for manual download."
+            fi
           fi
 
       # If tag provided and exists -> attach to release (create/update release by tag)
