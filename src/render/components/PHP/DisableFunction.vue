@@ -11,13 +11,12 @@
         <div class="left" @click="show = false">
           <yb-icon :svg="import('@/svg/delete.svg?raw')" class="top-back-icon" />
           <span class="ml-3 title"
-            >{{ I18nT('php.disableFunction.title') }} - {{ version.version }} -
-            {{ version.path }}</span
+            >{{ t('php.disableFunction.title') }} - {{ version.version }} - {{ version.path }}</span
           >
         </div>
         <div class="flex items-center">
           <el-button type="primary" @click.stop="showPHPIni">php.ini</el-button>
-          <el-button type="primary" @click.stop="doSave">{{ I18nT('base.save') }}</el-button>
+          <el-button type="primary" @click.stop="doSave">{{ t('base.save') }}</el-button>
         </div>
       </div>
 
@@ -28,7 +27,7 @@
               <div class="left">
                 <el-input
                   v-model.trim="search"
-                  :placeholder="I18nT('base.placeholderSearch')"
+                  :placeholder="t('base.placeholderSearch')"
                   clearable
                 ></el-input>
               </div>
@@ -37,14 +36,14 @@
           </template>
           <el-checkbox-group v-model="disableFunction" class="h-full overflow-hidden">
             <el-table height="100%" :data="tableData" style="width: 100%">
-              <el-table-column prop="name" :label="I18nT('php.disableFunction.function')">
+              <el-table-column prop="name" :label="t('php.disableFunction.function')">
               </el-table-column>
-              <el-table-column align="center" :label="I18nT('base.status')">
+              <el-table-column align="center" :label="t('base.status')">
                 <template #default="scope">
                   <el-checkbox :value="scope.row.name"></el-checkbox>
                 </template>
               </el-table-column>
-              <el-table-column width="150" align="center" :label="I18nT('base.action')">
+              <el-table-column width="150" align="center" :label="t('base.action')">
                 <template #default="scope">
                   <div class="flex items-center justify-center">
                     <el-button
@@ -74,7 +73,8 @@
   import { computed, reactive, ref } from 'vue'
   import { AsyncComponentSetup, AsyncComponentShow } from '@/util/AsyncComponent'
   import { SoftInstalled } from '@/store/brew'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { Delete, Edit, Plus } from '@element-plus/icons-vue'
   import { ConfStore } from '@/components/Conf/setup'
   import IPC from '@/util/IPC'
@@ -290,17 +290,17 @@
       return
     }
 
-    ElMessageBox.prompt(I18nT('php.disableFunction.title'), {
-      confirmButtonText: I18nT('base.confirm'),
-      cancelButtonText: I18nT('base.cancel'),
+    ElMessageBox.prompt(t('php.disableFunction.title'), {
+      confirmButtonText: t('base.confirm'),
+      cancelButtonText: t('base.cancel'),
       inputValue: name,
-      inputPlaceholder: I18nT('php.disableFunction.title'),
+      inputPlaceholder: t('php.disableFunction.title'),
       beforeClose: async (action, instance, done) => {
         if (action === 'confirm') {
           const newName = instance.inputValue?.trim()
 
           if (!newName) {
-            instance.editorErrorMessage = I18nT('php.disableFunction.emptyFunction')
+            instance.editorErrorMessage = t('php.disableFunction.emptyFunction')
             return
           }
 
@@ -311,13 +311,13 @@
 
           // 检查函数名是否已存在
           if (allFunctinos.value.some((func) => func === newName)) {
-            instance.editorErrorMessage = I18nT('php.disableFunction.sameName')
+            instance.editorErrorMessage = t('php.disableFunction.sameName')
             return
           }
 
           // 验证函数名格式（只允许字母、数字、下划线）
           if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(newName)) {
-            instance.editorErrorMessage = I18nT('php.disableFunction.invalidName')
+            instance.editorErrorMessage = t('php.disableFunction.invalidName')
             return
           }
 
@@ -327,7 +327,7 @@
           // 保存到本地存储
           try {
             await localForage.setItem(storeKey, JSON.parse(JSON.stringify(allFunctinos.value)))
-            MessageSuccess(I18nT('base.success'))
+            MessageSuccess(t('base.success'))
           } catch (error) {
             MessageError(`${error}`)
             // 回滚更改
@@ -349,9 +349,9 @@
       return
     }
 
-    ElMessageBox.confirm(I18nT('base.delAlertContent', { name }), {
-      confirmButtonText: I18nT('base.confirm'),
-      cancelButtonText: I18nT('base.cancel'),
+    ElMessageBox.confirm(t('base.delAlertContent', { name }), {
+      confirmButtonText: t('base.confirm'),
+      cancelButtonText: t('base.cancel'),
       type: 'warning',
       distinguishCancelAndClose: true,
       beforeClose: async (action, instance, done) => {
@@ -362,7 +362,7 @@
           // 保存到本地存储
           try {
             await localForage.setItem(storeKey, JSON.parse(JSON.stringify(list)))
-            MessageSuccess(I18nT('base.success'))
+            MessageSuccess(t('base.success'))
             allFunctinos.value = reactive(list)
           } catch (error) {
             MessageError(`${error}`)
@@ -379,28 +379,28 @@
    * 使用 localForage 保存
    */
   const addFunction = () => {
-    ElMessageBox.prompt(I18nT('php.disableFunction.title'), {
-      confirmButtonText: I18nT('base.confirm'),
-      cancelButtonText: I18nT('base.cancel'),
-      inputPlaceholder: I18nT('php.disableFunction.title'),
+    ElMessageBox.prompt(t('php.disableFunction.title'), {
+      confirmButtonText: t('base.confirm'),
+      cancelButtonText: t('base.cancel'),
+      inputPlaceholder: t('php.disableFunction.title'),
       beforeClose: async (action, instance, done) => {
         if (action === 'confirm') {
           const newName = instance.inputValue?.trim()
 
           if (!newName) {
-            instance.editorErrorMessage = I18nT('php.disableFunction.emptyFunction')
+            instance.editorErrorMessage = t('php.disableFunction.emptyFunction')
             return
           }
 
           // 检查函数名是否已存在
           if (allFunctinos.value.some((func) => func === newName)) {
-            instance.editorErrorMessage = I18nT('php.disableFunction.sameName')
+            instance.editorErrorMessage = t('php.disableFunction.sameName')
             return
           }
 
           // 验证函数名格式（只允许字母、数字、下划线）
           if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(newName)) {
-            instance.editorErrorMessage = I18nT('php.disableFunction.invalidName')
+            instance.editorErrorMessage = t('php.disableFunction.invalidName')
             return
           }
           const list = [...allFunctinos.value]
@@ -410,7 +410,7 @@
           // 保存到本地存储
           try {
             await localForage.setItem(storeKey, JSON.parse(JSON.stringify(list)))
-            MessageSuccess(I18nT('base.success'))
+            MessageSuccess(t('base.success'))
             allFunctinos.value = reactive(list)
           } catch (error) {
             MessageError(`${error}`)
@@ -483,7 +483,7 @@
       const value = `disable_functions = ${functions}`
       parse.set('disable_functions', value, 'PHP')
       await fs.writeFile(iniFile.value, parse.content)
-      MessageSuccess(I18nT('base.success'))
+      MessageSuccess(t('base.success'))
     } catch (e) {
       MessageError(`${e}`)
     }

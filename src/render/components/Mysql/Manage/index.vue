@@ -54,10 +54,10 @@
                   </template>
                 </template>
                 <el-button :disabled="versionRunning" @click.stop="showAddDatabase">{{
-                  I18nT('mysql.addDatabase')
+                  t('mysql.addDatabase')
                 }}</el-button>
                 <el-button :disabled="versionRunning" @click.stop="showRootPassword">{{
-                  I18nT('mysql.rootPassword')
+                  t('mysql.rootPassword')
                 }}</el-button>
                 <el-button @click.stop="toPhpMyAdmin">phpMyAdmin</el-button>
                 <el-dropdown
@@ -66,11 +66,11 @@
                   class="ml-3"
                   @click="doBackup"
                 >
-                  {{ I18nT('mysql.databaseBackup') }}
+                  {{ t('mysql.databaseBackup') }}
                   <template #dropdown>
                     <el-dropdown-menu>
                       <el-dropdown-item @click.stop="showBackupDirSet">{{
-                        I18nT('mysql.backupSaveDirSet')
+                        t('mysql.backupSaveDirSet')
                       }}</el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
@@ -82,7 +82,7 @@
             <template v-if="!item.run">
               <el-empty
                 :description="
-                  I18nT('mysql.mysqlNeedRunTips', {
+                  t('mysql.mysqlNeedRunTips', {
                     app: item.typeFlag === 'mysql' ? 'MySQL' : 'MariaDB'
                   })
                 "
@@ -100,7 +100,8 @@
 
 <script lang="ts" setup>
   import { computed, onUnmounted, watch, ref } from 'vue'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { AsyncComponentSetup, AsyncComponentShow } from '@/util/AsyncComponent'
   import type { ModuleInstalledItem } from '@/core/Module/ModuleInstalledItem'
   import { MySQLManage } from '@/components/Mysql/Manage/manage'

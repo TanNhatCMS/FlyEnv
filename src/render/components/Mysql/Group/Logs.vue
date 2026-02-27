@@ -23,7 +23,9 @@
 
 <script lang="ts" setup>
   import { ref, computed } from 'vue'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import { AsyncComponentSetup } from '@/util/AsyncComponent'
   import type { MysqlGroupItem } from '@shared/app'
   import LogVM from '@/components/Log/index.vue'
@@ -41,9 +43,9 @@
 
   const title = computed(() => {
     if (props.flag === 'log') {
-      return I18nT('base.log')
+      return t('base.log')
     }
-    return I18nT('base.slowLog')
+    return t('base.slowLog')
   })
 
   const filepath = computed(() => {

@@ -1,7 +1,7 @@
 <template>
   <el-form-item>
     <el-button type="primary" @click="generateCompose"
-      >Docker Compose {{ I18nT('base.preview') }}</el-button
+      >Docker Compose {{ t('base.preview') }}</el-button
     >
   </el-form-item>
 
@@ -16,15 +16,16 @@
       <pre>{{ composeYaml }}</pre>
     </el-scrollbar>
     <template #footer>
-      <el-button @click="dialogVisible = false">{{ I18nT('menu.close') }}</el-button>
-      <el-button type="primary" @click="copyToClipboard">{{ I18nT('base.copy') }}</el-button>
+      <el-button @click="dialogVisible = false">{{ t('menu.close') }}</el-button>
+      <el-button type="primary" @click="copyToClipboard">{{ t('base.copy') }}</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script lang="ts" setup>
   import { ref } from 'vue'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { MessageSuccess } from '@/util/Element'
   import { generateComposeFile } from '@/components/Podman/container/util'
 
@@ -44,7 +45,7 @@
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(composeYaml.value)
-      MessageSuccess(I18nT('base.copySuccess'))
+      MessageSuccess(t('base.copySuccess'))
     } catch (err) {
       console.error('复制失败:', err)
     }

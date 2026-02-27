@@ -25,7 +25,6 @@
   "noPhpWarning": "Check that no PHP version is selected, a static site will be created, and the PHP files will cannot be executed. Are you sure to continue?",
   "hostsWriteTips": "Enable / Disable all hosts in this list",
   "sort": "Sort",
-
   "projectPhp": "PHP Projects",
   "projectJava": "Java Projects",
   "projectNode": "Node Projects",
@@ -35,7 +34,7 @@
   "projectDeno": "Deno Projects",
   "projectBun": "Bun Projects",
   "projectPerl": "Perl Projects",
-
+  "projectErlang": "Erlang Projects",
   "jarPackagePath": "JAR Package Path",
   "jdkPath": "JDK Path",
   "pythonPath": "Python Path",

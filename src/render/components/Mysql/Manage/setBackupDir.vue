@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="show"
-    :title="I18nT('mysql.backupSaveDirSet')"
+    :title="t('mysql.backupSaveDirSet')"
     width="600px"
     :destroy-on-close="true"
     class="host-edit new-project"
@@ -21,7 +21,9 @@
 <script lang="ts" setup>
   import { computed } from 'vue'
   import { AsyncComponentSetup } from '@/util/AsyncComponent'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import type { ModuleInstalledItem } from '@/core/Module/ModuleInstalledItem'
   import { MySQLManage } from './manage'
   import { FolderOpened } from '@element-plus/icons-vue'

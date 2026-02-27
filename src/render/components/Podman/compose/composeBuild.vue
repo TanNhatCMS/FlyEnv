@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="show"
-    :title="I18nT('podman.Build') + ' Compose'"
+    :title="t('podman.Build') + ' Compose'"
     width="750px"
     :destroy-on-close="true"
     class="el-dialog-content-flex-1 h-[75%] dark:bg-[#1d2033]"
@@ -19,7 +19,7 @@
             <el-checkbox-group v-model="module">
               <el-collapse v-model="cate" style="border-top: none">
                 <template v-for="(item, _index) in cates" :key="_index">
-                  <el-collapse-item :title="I18nT(`aside.${item.cate}`)" :name="item.cate">
+                  <el-collapse-item :title="t(`aside.${item.cate}`)" :name="item.cate">
                     <div class="w-full flex flex-col">
                       <template v-for="(sub, _j) in item.sub" :key="_j">
                         <el-checkbox :value="sub" :label="sub"></el-checkbox>
@@ -34,7 +34,7 @@
         <div class="right flex-1">
           <template v-if="!module.length">
             <div class="w-full pt-8 flex justify-center">
-              <el-empty :description="I18nT('podman.ModuleEmpty')"></el-empty>
+              <el-empty :description="t('podman.ModuleEmpty')"></el-empty>
             </div>
           </template>
           <template v-else>
@@ -139,8 +139,8 @@
     </template>
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click.stop="onCancel">{{ I18nT('base.cancel') }}</el-button>
-        <el-button type="primary" @click.stop="doSubmit">{{ I18nT('base.confirm') }}</el-button>
+        <el-button @click.stop="onCancel">{{ t('base.cancel') }}</el-button>
+        <el-button type="primary" @click.stop="doSubmit">{{ t('base.confirm') }}</el-button>
       </div>
     </template>
   </el-dialog>
@@ -148,7 +148,8 @@
 
 <script lang="ts" setup>
   import { ref, watch } from 'vue'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { ElMessage } from 'element-plus'
   import { AsyncComponentSetup } from '@/util/AsyncComponent'
   import { uuid } from '@/util/Index'
@@ -317,7 +318,7 @@
     const base = ComposeBuildForm.base
     base.saveMirrors()
     await fs.writeFile(base.dir, content)
-    ElMessage.success(I18nT('base.success'))
+    ElMessage.success(t('base.success'))
     shell.showItemInFolder(base.dir).catch()
 
     const obj = {

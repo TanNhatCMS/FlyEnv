@@ -11,44 +11,44 @@
         <div class="flex flex-col gap-5">
           <!-- 基本信息 -->
           <el-descriptions
-            :title="I18nT('podman.container.basicInfo')"
+            :title="t('podman.container.basicInfo')"
             border
             :column="2"
             direction="vertical"
           >
-            <el-descriptions-item :label="I18nT('podman.container.name')">
+            <el-descriptions-item :label="t('podman.container.name')">
               {{ containerDetail.Name }}
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.id')">
+            <el-descriptions-item :label="t('podman.container.id')">
               {{ containerDetail.Id.substring(0, 12) }}
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.image')">
+            <el-descriptions-item :label="t('podman.container.image')">
               {{ containerDetail.ImageName || containerDetail.Config.Image }}
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.status')">
+            <el-descriptions-item :label="t('podman.container.status')">
               <el-tag :type="getStatusType(containerDetail.State.Status)">
                 {{ containerDetail.State.Status }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.exitCode')">
+            <el-descriptions-item :label="t('podman.container.exitCode')">
               {{ containerDetail.State.ExitCode }}
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.restartCount')">
+            <el-descriptions-item :label="t('podman.container.restartCount')">
               {{ containerDetail.RestartCount }}
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.autoRemove')">
+            <el-descriptions-item :label="t('podman.container.autoRemove')">
               <el-tag :type="containerDetail.HostConfig.AutoRemove ? 'success' : 'info'">
                 {{
                   containerDetail.HostConfig.AutoRemove
-                    ? I18nT('podman.common.yes')
-                    : I18nT('podman.common.no')
+                    ? t('podman.common.yes')
+                    : t('podman.common.no')
                 }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.isInfra')">
+            <el-descriptions-item :label="t('podman.container.isInfra')">
               <el-tag :type="containerDetail.IsInfra ? 'warning' : 'info'">
                 {{
-                  containerDetail.IsInfra ? I18nT('podman.common.yes') : I18nT('podman.common.no')
+                  containerDetail.IsInfra ? t('podman.common.yes') : t('podman.common.no')
                 }}
               </el-tag>
             </el-descriptions-item>
@@ -56,59 +56,59 @@
 
           <!-- 运行状态 -->
           <el-descriptions
-            :title="I18nT('podman.container.runningStatus')"
+            :title="t('podman.container.runningStatus')"
             border
             :column="2"
             direction="vertical"
           >
-            <el-descriptions-item :label="I18nT('podman.container.running')">
+            <el-descriptions-item :label="t('podman.container.running')">
               <el-tag :type="containerDetail.State.Running ? 'success' : 'info'">
                 {{
                   containerDetail.State.Running
-                    ? I18nT('podman.common.yes')
-                    : I18nT('podman.common.no')
+                    ? t('podman.common.yes')
+                    : t('podman.common.no')
                 }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.paused')">
+            <el-descriptions-item :label="t('podman.container.paused')">
               <el-tag :type="containerDetail.State.Paused ? 'warning' : 'info'">
                 {{
                   containerDetail.State.Paused
-                    ? I18nT('podman.common.yes')
-                    : I18nT('podman.common.no')
+                    ? t('podman.common.yes')
+                    : t('podman.common.no')
                 }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.restarting')">
+            <el-descriptions-item :label="t('podman.container.restarting')">
               <el-tag :type="containerDetail.State.Restarting ? 'warning' : 'info'">
                 {{
                   containerDetail.State.Restarting
-                    ? I18nT('podman.common.yes')
-                    : I18nT('podman.common.no')
+                    ? t('podman.common.yes')
+                    : t('podman.common.no')
                 }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.oomKilled')">
+            <el-descriptions-item :label="t('podman.container.oomKilled')">
               <el-tag :type="containerDetail.State.OOMKilled ? 'danger' : 'info'">
                 {{
                   containerDetail.State.OOMKilled
-                    ? I18nT('podman.common.yes')
-                    : I18nT('podman.common.no')
+                    ? t('podman.common.yes')
+                    : t('podman.common.no')
                 }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.dead')">
+            <el-descriptions-item :label="t('podman.container.dead')">
               <el-tag :type="containerDetail.State.Dead ? 'danger' : 'info'">
                 {{
                   containerDetail.State.Dead
-                    ? I18nT('podman.common.yes')
-                    : I18nT('podman.common.no')
+                    ? t('podman.common.yes')
+                    : t('podman.common.no')
                 }}
               </el-tag>
             </el-descriptions-item>
             <el-descriptions-item
               v-if="containerDetail.State.Error"
-              :label="I18nT('podman.container.errorMsg')"
+              :label="t('podman.container.errorMsg')"
             >
               {{ containerDetail.State.Error }}
             </el-descriptions-item>
@@ -116,18 +116,18 @@
 
           <!-- 时间信息 -->
           <el-descriptions
-            :title="I18nT('podman.container.timeInfo')"
+            :title="t('podman.container.timeInfo')"
             border
             :column="2"
             direction="vertical"
           >
-            <el-descriptions-item :label="I18nT('podman.container.createdTime')">
+            <el-descriptions-item :label="t('podman.container.createdTime')">
               {{ formatTime(containerDetail.Created) }}
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.startedAt')">
+            <el-descriptions-item :label="t('podman.container.startedAt')">
               {{ formatTime(containerDetail.State.StartedAt) }}
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.finishedAt')">
+            <el-descriptions-item :label="t('podman.container.finishedAt')">
               {{ formatTime(containerDetail.State.FinishedAt) }}
             </el-descriptions-item>
           </el-descriptions>
@@ -135,14 +135,14 @@
           <!-- 端口信息 -->
           <el-descriptions
             v-if="hasPortInfo"
-            :title="I18nT('podman.container.portInfo')"
+            :title="t('podman.container.portInfo')"
             border
             :column="1"
             direction="vertical"
           >
             <el-descriptions-item
               v-if="Object.keys(containerDetail.NetworkSettings.Ports || {}).length > 0"
-              :label="I18nT('podman.container.portBindings')"
+              :label="t('podman.container.portBindings')"
             >
               <div class="space-y-2">
                 <div
@@ -168,7 +168,7 @@
 
             <el-descriptions-item
               v-if="Object.keys(containerDetail.Config.ExposedPorts || {}).length > 0"
-              :label="I18nT('podman.container.exposedPorts')"
+              :label="t('podman.container.exposedPorts')"
             >
               <div class="flex flex-wrap gap-2">
                 <el-tag
@@ -186,24 +186,24 @@
           <!-- 挂载信息 -->
           <el-descriptions
             v-if="containerDetail.Mounts?.length > 0"
-            :title="I18nT('podman.container.mountInfo')"
+            :title="t('podman.container.mountInfo')"
             border
             :column="1"
             :direction="'vertical'"
           >
-            <el-descriptions-item :label="I18nT('podman.container.mountPoints')">
+            <el-descriptions-item :label="t('podman.container.mountPoints')">
               <div class="flex flex-col gap-3">
                 <template v-for="(mount, _index) in containerDetail.Mounts" :key="_index">
                   <el-descriptions border :column="2" direction="vertical">
-                    <el-descriptions-item :label="I18nT('podman.container.mountType')">
+                    <el-descriptions-item :label="t('podman.container.mountType')">
                       <el-tag size="small" class="ml-1">{{ mount.Type }}</el-tag>
                     </el-descriptions-item>
-                    <el-descriptions-item :label="I18nT('podman.container.mountPermission')">
+                    <el-descriptions-item :label="t('podman.container.mountPermission')">
                       <el-tag :type="mount.RW ? 'success' : 'info'" size="small" class="ml-1">
-                        {{ mount.RW ? I18nT('podman.common.yes') : I18nT('podman.common.no') }}
+                        {{ mount.RW ? t('podman.common.yes') : t('podman.common.no') }}
                       </el-tag>
                     </el-descriptions-item>
-                    <el-descriptions-item :label="I18nT('podman.container.mountPath')" :span="2">
+                    <el-descriptions-item :label="t('podman.container.mountPath')" :span="2">
                       <span class="font-mono text-xs ml-1"
                         >{{ mount.Source }} → {{ mount.Destination }}</span
                       >
@@ -217,22 +217,22 @@
           <!-- 网络信息 -->
           <el-descriptions
             v-if="containerDetail.NetworkSettings?.Networks"
-            :title="I18nT('podman.container.networkInfo')"
+            :title="t('podman.container.networkInfo')"
             border
             :column="1"
             direction="vertical"
           >
-            <el-descriptions-item :label="I18nT('podman.container.networkConfig')">
+            <el-descriptions-item :label="t('podman.container.networkConfig')">
               <div class="flex flex-col gap-3">
                 <template
                   v-for="(network, name) in containerDetail.NetworkSettings.Networks"
                   :key="name"
                 >
                   <el-descriptions border :column="1" direction="vertical">
-                    <el-descriptions-item :label="I18nT('podman.container.networkName')">
+                    <el-descriptions-item :label="t('podman.container.networkName')">
                       <span>{{ name }}</span>
                     </el-descriptions-item>
-                    <el-descriptions-item :label="I18nT('podman.container.networkId')">
+                    <el-descriptions-item :label="t('podman.container.networkId')">
                       <span>{{ network.NetworkID }}</span>
                     </el-descriptions-item>
                   </el-descriptions>
@@ -243,22 +243,22 @@
 
           <!-- 命令信息 -->
           <el-descriptions
-            :title="I18nT('podman.container.commandInfo')"
+            :title="t('podman.container.commandInfo')"
             border
             :column="1"
             direction="vertical"
           >
-            <el-descriptions-item :label="I18nT('podman.container.startCmd')">
+            <el-descriptions-item :label="t('podman.container.startCmd')">
               <pre class="command-pre"
                 >{{ containerDetail.Path }} {{ containerDetail.Args.join(' ') }}</pre
               >
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.workDir')">
+            <el-descriptions-item :label="t('podman.container.workDir')">
               <span class="font-mono text-sm">{{ containerDetail.Config.WorkingDir }}</span>
             </el-descriptions-item>
             <el-descriptions-item
               v-if="containerDetail.Config.Entrypoint?.length > 0"
-              :label="I18nT('podman.container.entrypoint')"
+              :label="t('podman.container.entrypoint')"
             >
               <span class="font-mono text-sm">{{
                 containerDetail.Config.Entrypoint.join(' ')
@@ -269,12 +269,12 @@
           <!-- 环境变量 -->
           <el-descriptions
             v-if="containerDetail.Config.Env.length > 0"
-            :title="I18nT('podman.container.envVars')"
+            :title="t('podman.container.envVars')"
             border
             :column="1"
             direction="vertical"
           >
-            <el-descriptions-item :label="I18nT('podman.container.environmentVars')">
+            <el-descriptions-item :label="t('podman.container.environmentVars')">
               <div class="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
                 <el-tag
                   v-for="env in containerDetail.Config.Env"
@@ -290,45 +290,45 @@
 
           <!-- 配置信息 -->
           <el-descriptions
-            :title="I18nT('podman.container.configInfo')"
+            :title="t('podman.container.configInfo')"
             border
             :column="2"
             direction="vertical"
           >
-            <el-descriptions-item :label="I18nT('podman.container.restartPolicy')">
+            <el-descriptions-item :label="t('podman.container.restartPolicy')">
               {{ containerDetail.HostConfig.RestartPolicy.Name }}
               <span
                 v-if="containerDetail.HostConfig.RestartPolicy.MaximumRetryCount > 0"
                 class="text-gray-500 text-sm ml-1"
               >
-                ({{ I18nT('podman.container.maxRetry') }}:
+                ({{ t('podman.container.maxRetry') }}:
                 {{ containerDetail.HostConfig.RestartPolicy.MaximumRetryCount }})
               </span>
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.networkMode')">
+            <el-descriptions-item :label="t('podman.container.networkMode')">
               {{ containerDetail.HostConfig.NetworkMode }}
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.privilegedMode')">
+            <el-descriptions-item :label="t('podman.container.privilegedMode')">
               <el-tag
                 :type="containerDetail.HostConfig.Privileged ? 'warning' : 'info'"
                 size="small"
               >
                 {{
                   containerDetail.HostConfig.Privileged
-                    ? I18nT('podman.common.yes')
-                    : I18nT('podman.common.no')
+                    ? t('podman.common.yes')
+                    : t('podman.common.no')
                 }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item :label="I18nT('podman.container.readonlyFs')">
+            <el-descriptions-item :label="t('podman.container.readonlyFs')">
               <el-tag
                 :type="containerDetail.HostConfig.ReadonlyRootfs ? 'warning' : 'info'"
                 size="small"
               >
                 {{
                   containerDetail.HostConfig.ReadonlyRootfs
-                    ? I18nT('podman.common.yes')
-                    : I18nT('podman.common.no')
+                    ? t('podman.common.yes')
+                    : t('podman.common.no')
                 }}
               </el-tag>
             </el-descriptions-item>
@@ -337,11 +337,11 @@
       </el-scrollbar>
     </div>
 
-    <el-empty v-else :description="I18nT('podman.container.loading')" />
+    <el-empty v-else :description="t('podman.container.loading')" />
 
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="closedFn">{{ I18nT('podman.common.close') }}</el-button>
+        <el-button @click="closedFn">{{ t('podman.common.close') }}</el-button>
       </span>
     </template>
   </el-dialog>
@@ -354,8 +354,9 @@
   import IPC from '@/util/IPC'
   import { PodmanManager } from '@/components/Podman/class/Podman'
   import type { Container } from '@/components/Podman/class/Container'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
 
+  const { t } = useI18n()
   const { show, onClosed, onSubmit, closedFn } = AsyncComponentSetup()
 
   const props = defineProps<{ item: Container }>()

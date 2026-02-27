@@ -9,7 +9,7 @@
       <Service v-if="tab === 0" type-flag="postgresql" title="PostgreSQL">
         <template #tool-left>
           <div class="flex items-center gap-1 pl-4 pr-2">
-            <span class="flex-shrink-0">{{ I18nT('util.mysqlDataDir') }}: </span>
+            <span class="flex-shrink-0">{{ t('util.mysqlDataDir') }}: </span>
             <span
               class="cursor-pointer hover:text-yellow-500 truncate"
               @click.stop="shell.openPath(DATA_DIR)"
@@ -43,7 +43,7 @@
   import Logs from './Logs.vue'
   import Manager from '../VersionManager/index.vue'
   import { AppModuleSetup } from '@/core/Module'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
   import { join } from '@/util/path-browserify'
   import { BrewStore } from '@/store/brew'
   import { computed } from 'vue'
@@ -52,13 +52,9 @@
   import { Edit } from '@element-plus/icons-vue'
   import { shell } from '@/util/NodeFn'
 
+  const { t } = useI18n()
   const { tab, checkVersion } = AppModuleSetup('nginx')
-  const tabs = [
-    I18nT('base.service'),
-    I18nT('base.versionManager'),
-    I18nT('base.configFile'),
-    I18nT('base.log')
-  ]
+  const tabs = [t('base.service'), t('base.versionManager'), t('base.configFile'), t('base.log')]
   checkVersion()
 
   const brewStore = BrewStore()
@@ -77,7 +73,7 @@
         const dir = join(window.Server.PostgreSqlDir!, `postgresql${versionTop}`)
         return dir
       }
-      return I18nT('base.needSelectVersion')
+      return t('base.needSelectVersion')
     },
     set(v: string) {
       if (!currentVersion?.value?.bin) {

@@ -23,7 +23,8 @@
 </template>
 <script lang="ts" setup>
   import { ref, computed } from 'vue'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { AsyncComponentSetup } from '@/util/AsyncComponent'
   import LogVM from '@/components/Log/index.vue'
   import ToolVM from '@/components/Log/tool.vue'
@@ -40,7 +41,7 @@
   const log = ref()
 
   const title = computed(() => {
-    return props.type === 'php-fpm-slow' ? I18nT('base.slowLog') : I18nT('php.fpmLog')
+    return props.type === 'php-fpm-slow' ? t('base.slowLog') : t('php.fpmLog')
   })
 
   const filepath = computed(() => {

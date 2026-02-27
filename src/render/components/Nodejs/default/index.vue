@@ -15,7 +15,9 @@
 </template>
 
 <script lang="tsx" setup>
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import { NodeDefaultSetup, Setup } from './setup'
   import { ElInput, ElButton, ElTooltip, ElProgress } from 'element-plus'
   import type { Column } from 'element-plus'
@@ -27,7 +29,7 @@
 
   const copyCommand = (command: string) => {
     clipboard.writeText(command)
-    MessageSuccess(I18nT('base.copySuccess'))
+    MessageSuccess(t('base.copySuccess'))
   }
 
   const columns: Column<any>[] = [
@@ -42,11 +44,11 @@
         return (
           <div class="w-full name-cell">
             <span style="display: inline-flex; align-items: center; padding: 2px 0">
-              {I18nT('base.version')}
+              {t('base.version')}
             </span>
             <ElInput
               v-model={NodeDefaultSetup.search}
-              placeholder={I18nT('base.placeholderSearch')}
+              placeholder={t('base.placeholderSearch')}
               clearable={true}
             ></ElInput>
           </div>
@@ -83,7 +85,7 @@
     },
     {
       key: 'current',
-      title: I18nT('util.nodeListCellCurrent'),
+      title: t('util.nodeListCellCurrent'),
       dataKey: 'current',
       class: 'flex-1',
       headerClass: 'flex-1',
@@ -131,7 +133,7 @@
     },
     {
       key: 'installed',
-      title: I18nT('util.nodeListCellInstalled'),
+      title: t('util.nodeListCellInstalled'),
       dataKey: 'installed',
       class: 'flex-1',
       headerClass: 'flex-1',
@@ -149,7 +151,7 @@
               />
             </ElButton>
           )
-        } else if (NodeDefaultSetup.installing.hasOwnProperty(row.version)) {
+        } else if (Object.prototype.hasOwnProperty.call(NodeDefaultSetup.installing, row.version)) {
           return <ElProgress class="w-full" percentage={NodeDefaultSetup.installing[row.version]} />
         }
         return <span></span>
@@ -157,7 +159,7 @@
     },
     {
       key: 'operation',
-      title: I18nT('base.action'),
+      title: t('base.action'),
       dataKey: 'operation',
       class: 'flex-shrink-0',
       headerClass: 'flex-shrink-0',
@@ -167,7 +169,7 @@
         if (NodeDefaultSetup.versionInstalling[row.version]) {
           return <ElButton loading={true} link></ElButton>
         } else {
-          const t = row.installed ? I18nT('base.uninstall') : I18nT('base.install')
+          const title = row.installed ? t('base.uninstall') : t('base.install')
           const a = row.installed ? 'uninstall' : 'install'
           return (
             <ElButton
@@ -177,7 +179,7 @@
               }}
               link
             >
-              {t}
+              {title}
             </ElButton>
           )
         }
@@ -185,4 +187,3 @@
     }
   ]
 </script>
-<script setup lang="ts"></script>

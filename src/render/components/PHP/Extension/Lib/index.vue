@@ -1,9 +1,9 @@
 <template>
   <el-table v-loading="fetching" height="100%" :data="showTableLibFilter" style="width: 100%">
-    <el-table-column prop="name" class-name="name-cell-td" :label="I18nT('base.name')">
+    <el-table-column prop="name" class-name="name-cell-td" :label="t('base.name')">
       <template #header>
         <div class="w-p100 name-cell">
-          <span style="display: inline-flex; padding: 2px 0">{{ I18nT('base.name') }}</span>
+          <span style="display: inline-flex; padding: 2px 0">{{ t('base.name') }}</span>
           <el-input v-model.trim="search" placeholder="search" clearable></el-input>
         </div>
       </template>
@@ -13,7 +13,7 @@
         </div>
       </template>
     </el-table-column>
-    <el-table-column align="center" :label="I18nT('base.status')">
+    <el-table-column align="center" :label="t('base.status')">
       <template #default="scope">
         <template v-if="PHPSetup.libExecing[scope.row.name]">
           <el-button :loading="true" link></el-button>
@@ -50,7 +50,8 @@
 <script lang="ts" setup>
   import { ref, computed } from 'vue'
   import type { SoftInstalled } from '@shared/app'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { PHPSetup } from '@/components/PHP/store'
   import { shell } from '@/util/NodeFn'
 

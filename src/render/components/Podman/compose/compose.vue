@@ -3,10 +3,10 @@
     <template v-if="PodmanManager.dockerComposeExists">
       <div class="flex items-center">
         <el-button size="small" class="flex-shrink-0" @click="addCompose(undefined)">
-          {{ I18nT('base.add') }}
+          {{ t('base.add') }}
         </el-button>
         <el-button size="small" class="flex-shrink-0" @click="buildCompose()">
-          {{ I18nT('podman.Build') }}
+          {{ t('podman.Build') }}
         </el-button>
       </div>
       <el-table
@@ -16,17 +16,17 @@
         :data="composeList"
         style="width: 100%"
       >
-        <el-table-column prop="name" :label="I18nT('base.name')" width="160" />
-        <el-table-column prop="flag" :label="I18nT('host.projectName')" width="160" />
-        <el-table-column prop="path" :label="I18nT('base.path')">
+        <el-table-column prop="name" :label="t('base.name')" width="160" />
+        <el-table-column prop="flag" :label="t('host.projectName')" width="160" />
+        <el-table-column prop="path" :label="t('base.path')">
           <template #default="scope">
             <span class="truncate hover:text-yellow-500 cursor-pointer">{{
               scope.row.paths.join(' ')
             }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="comment" :label="I18nT('host.comment')"></el-table-column>
-        <el-table-column prop="running" :label="I18nT('podman.Status')" width="110" align="center">
+        <el-table-column prop="comment" :label="t('host.comment')"></el-table-column>
+        <el-table-column prop="running" :label="t('podman.Status')" width="110" align="center">
           <template #default="scope">
             <template v-if="scope.row?.statusError">
               <el-tooltip :content="scope.row?.statusError">
@@ -56,7 +56,7 @@
             </template>
           </template>
         </el-table-column>
-        <el-table-column :label="I18nT('podman.Action')" width="100" align="center">
+        <el-table-column :label="t('podman.Action')" width="100" align="center">
           <template #default="scope">
             <el-dropdown>
               <template #default>
@@ -67,24 +67,24 @@
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item v-if="scope.row.run" @click.stop="scope.row.stopWithTerminal()">
-                    {{ I18nT('podman.StopWithTerminal') }}
+                    {{ t('podman.StopWithTerminal') }}
                   </el-dropdown-item>
                   <el-dropdown-item v-else @click.stop="scope.row.startWithTerminal()">
-                    {{ I18nT('podman.StartWithTerminal') }}
+                    {{ t('podman.StartWithTerminal') }}
                   </el-dropdown-item>
                   <el-dropdown-item @click.stop="scope.row.showLogsWithTerminal()">
-                    {{ I18nT('base.log') }}
+                    {{ t('base.log') }}
                   </el-dropdown-item>
                   <el-dropdown-item @click.stop="addCompose(scope.row)">
-                    {{ I18nT('base.edit') }}
+                    {{ t('base.edit') }}
                   </el-dropdown-item>
                   <template v-for="(f, _i) in scope.row.paths" :key="_i">
                     <el-dropdown-item @click.stop="toEditFile(f)">
-                      {{ I18nT('base.edit') }} {{ basename(f) }}
+                      {{ t('base.edit') }} {{ basename(f) }}
                     </el-dropdown-item>
                   </template>
                   <el-dropdown-item @click.stop="removeCompose(scope.row)">
-                    {{ I18nT('podman.Delete') }}
+                    {{ t('podman.Delete') }}
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -95,10 +95,10 @@
     </template>
     <template v-else>
       <div class="w-full h-full p-8 flex flex-col justify-center items-center gap-7">
-        <div>{{ I18nT('podman.DockerComposeNoExistsTips') }}</div>
+        <div>{{ t('podman.DockerComposeNoExistsTips') }}</div>
         <el-button v-if="isNoWindows" type="primary" @click.stop="doInstallDockerCompose">
           <template #default>
-            <span>{{ I18nT('podman.DockerComposeInstallButton') }}</span>
+            <span>{{ t('podman.DockerComposeInstallButton') }}</span>
             <template v-if="PodmanManager.dockerComposeInstalling">
               <el-button class="ml-2" link loading></el-button>
             </template>
@@ -112,7 +112,8 @@
 <script lang="ts" setup>
   import { computed, onMounted } from 'vue'
   import { PodmanManager } from '@/components/Podman/class/Podman'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import type { Compose } from '@/components/Podman/class/Compose'
   import { AsyncComponentShow } from '@/util/AsyncComponent'
   import { Warning } from '@element-plus/icons-vue'

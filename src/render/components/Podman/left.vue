@@ -6,7 +6,7 @@
   >
     <template #header>
       <div class="flex items-center justify-between">
-        <span class="text-[12px]">{{ I18nT('podman.Machine') }}</span>
+        <span class="text-[12px]">{{ t('podman.Machine') }}</span>
         <el-button link :icon="Plus" @click.stop="addMachine(undefined)"></el-button>
       </div>
     </template>
@@ -79,20 +79,20 @@
                               :disabled="item.running"
                               @click.stop="item.start()"
                             >
-                              {{ I18nT('podman.Start') }}
+                              {{ t('podman.Start') }}
                             </el-dropdown-item>
                             <el-dropdown-item
                               v-else
                               :disabled="item.running"
                               @click.stop="item.stop()"
                             >
-                              {{ I18nT('podman.Stop') }}
+                              {{ t('podman.Stop') }}
                             </el-dropdown-item>
                             <el-dropdown-item @click.stop="addMachine(item)">
-                              {{ I18nT('base.edit') }}
+                              {{ t('base.edit') }}
                             </el-dropdown-item>
                             <el-dropdown-item divided @click.stop="item.remove()">
-                              <span class="text-red-500">{{ I18nT('podman.Delete') }}</span>
+                              <span class="text-red-500">{{ t('podman.Delete') }}</span>
                             </el-dropdown-item>
                           </el-dropdown-menu>
                         </template>
@@ -111,7 +111,7 @@
 <script lang="ts" setup>
   import { computed } from 'vue'
   import { Plus } from '@element-plus/icons-vue'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
   import { PodmanManager } from '@/components/Podman/class/Podman'
   import { emptyClick } from '@/util/Index'
   import { AsyncComponentShow } from '@/util/AsyncComponent'
@@ -121,6 +121,7 @@
     MachineAddVM = res.default
   })
 
+  const { t } = useI18n()
   const addMachine = (item?: any) => {
     AsyncComponentShow(MachineAddVM, {
       item

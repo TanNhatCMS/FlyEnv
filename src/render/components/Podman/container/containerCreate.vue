@@ -1,11 +1,7 @@
 <template>
   <el-dialog
     v-model="show"
-    :title="
-      isEdit
-        ? I18nT('base.edit') + I18nT('podman.Container')
-        : I18nT('podman.Container') + I18nT('base.add')
-    "
+    :title="isEdit ? t('base.edit') + t('podman.Container') : t('podman.Container') + t('base.add')"
     class="el-dialog-content-flex-1 h-[75%] dark:bg-[#1d2033]"
     width="600px"
     @closed="closedFn"
@@ -14,7 +10,7 @@
       <el-form ref="formRef" :model="form" label-position="top" class="pt-2">
         <el-form-item
           prop="dir"
-          :label="I18nT('podman.ComposeFileSaveDir')"
+          :label="t('podman.ComposeFileSaveDir')"
           required
           :show-message="false"
         >
@@ -25,11 +21,11 @@
           </el-input>
         </el-form-item>
 
-        <el-form-item :label="I18nT('base.name')" prop="name" required :show-message="false">
+        <el-form-item :label="t('base.name')" prop="name" required :show-message="false">
           <el-input v-model="form.name" maxlength="32" />
         </el-form-item>
 
-        <el-form-item :label="I18nT('podman.Image')" prop="image" required :show-message="false">
+        <el-form-item :label="t('podman.Image')" prop="image" required :show-message="false">
           <el-select v-model="form.image" filterable style="width: 100%">
             <el-option
               v-for="img in images"
@@ -40,37 +36,33 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item :label="I18nT('setup.module.command')" prop="command">
+        <el-form-item :label="t('setup.module.command')" prop="command">
           <el-input v-model="form.command" />
         </el-form-item>
 
-        <el-form-item :label="I18nT('podman.CommandArgs')" prop="args">
+        <el-form-item :label="t('podman.CommandArgs')" prop="args">
           <el-input v-model="form.args" />
         </el-form-item>
 
-        <el-form-item :label="I18nT('podman.PortBind')" prop="ports">
+        <el-form-item :label="t('podman.PortBind')" prop="ports">
           <template #label>
             <div class="inline-flex items-center gap-3">
-              <span>{{ I18nT('podman.PortBind') }}</span>
+              <span>{{ t('podman.PortBind') }}</span>
               <el-button link type="primary" :icon="Plus" @click.stop="addPort"></el-button>
             </div>
           </template>
           <div class="w-full flex flex-col gap-3">
             <template v-for="(p, _p) in form.ports" :key="_p">
               <div class="w-full flex items-center justify-between">
-                <el-input
-                  v-model="p.in"
-                  :placeholder="I18nT('podman.ContainerPort')"
-                  class="flex-1"
-                >
+                <el-input v-model="p.in" :placeholder="t('podman.ContainerPort')" class="flex-1">
                   <template #prefix>
-                    <span>{{ I18nT('podman.ContainerPort') }}</span>
+                    <span>{{ t('podman.ContainerPort') }}</span>
                   </template>
                 </el-input>
                 <span class="mx-3 flex-shrink-0">→</span>
-                <el-input v-model="p.out" :placeholder="I18nT('podman.LocalPort')" class="flex-1">
+                <el-input v-model="p.out" :placeholder="t('podman.LocalPort')" class="flex-1">
                   <template #prefix>
-                    <span>{{ I18nT('podman.LocalPort') }}</span>
+                    <span>{{ t('podman.LocalPort') }}</span>
                   </template>
                 </el-input>
                 <el-button
@@ -84,25 +76,25 @@
           </div>
         </el-form-item>
 
-        <el-form-item :label="I18nT('podman.Volumes')" prop="volumes">
+        <el-form-item :label="t('podman.Volumes')" prop="volumes">
           <template #label>
             <div class="inline-flex items-center gap-3">
-              <span>{{ I18nT('podman.Volumes') }}</span>
+              <span>{{ t('podman.Volumes') }}</span>
               <el-button link type="primary" :icon="Plus" @click.stop="addVolumes"></el-button>
             </div>
           </template>
           <div class="w-full flex flex-col gap-3">
             <template v-for="(p, _p) in form.volumes" :key="_p">
               <div class="w-full flex items-center justify-between">
-                <el-input v-model="p.in" :placeholder="I18nT('podman.ContainerDir')" class="flex-1">
+                <el-input v-model="p.in" :placeholder="t('podman.ContainerDir')" class="flex-1">
                   <template #prefix>
-                    <span>{{ I18nT('podman.ContainerDir') }}</span>
+                    <span>{{ t('podman.ContainerDir') }}</span>
                   </template>
                 </el-input>
                 <span class="mx-3 flex-shrink-0">→</span>
-                <el-input v-model="p.out" :placeholder="I18nT('podman.LocalDir')" class="flex-1">
+                <el-input v-model="p.out" :placeholder="t('podman.LocalDir')" class="flex-1">
                   <template #prefix>
-                    <span>{{ I18nT('podman.LocalDir') }}</span>
+                    <span>{{ t('podman.LocalDir') }}</span>
                   </template>
                   <template #append>
                     <el-button :icon="FolderOpened" @click.stop="chooseVolume(_p)"></el-button>
@@ -119,10 +111,10 @@
           </div>
         </el-form-item>
 
-        <el-form-item :label="I18nT('podman.ContainerEnvVars')" prop="env">
+        <el-form-item :label="t('podman.ContainerEnvVars')" prop="env">
           <template #label>
             <div class="inline-flex items-center gap-3">
-              <span>{{ I18nT('podman.ContainerEnvVars') }}</span>
+              <span>{{ t('podman.ContainerEnvVars') }}</span>
               <el-button link type="primary" :icon="Plus" @click.stop="addEnv"></el-button>
             </div>
           </template>
@@ -131,15 +123,11 @@
               <div class="w-full flex items-center justify-between gap-3">
                 <el-input
                   v-model="item.name"
-                  :placeholder="I18nT('host.envVar')"
+                  :placeholder="t('host.envVar')"
                   class="w-[140px] flex-shrink-0"
                 >
                 </el-input>
-                <el-input
-                  v-model="item.value"
-                  :placeholder="I18nT('tools.envValue')"
-                  class="flex-1"
-                >
+                <el-input v-model="item.value" :placeholder="t('tools.envValue')" class="flex-1">
                 </el-input>
                 <el-button
                   class="flex-shrink-0 ml-4"
@@ -152,29 +140,28 @@
           </div>
         </el-form-item>
 
-        <el-form-item :label="I18nT('podman.NetworkMode')" prop="network">
-          <el-select v-model="form.networkMode" :placeholder="I18nT('podman.NetworkMode')">
+        <el-form-item :label="t('podman.NetworkMode')" prop="network">
+          <el-select v-model="form.networkMode" :placeholder="t('podman.NetworkMode')">
             <el-option label="bridge" value="bridge" />
             <el-option label="host" value="host" />
             <el-option label="none" value="none" />
           </el-select>
         </el-form-item>
 
-        <el-form-item :label="I18nT('podman.NetworkName')" prop="network">
-          <el-input v-model="form.networkName" :placeholder="I18nT('podman.NetworkName')">
-          </el-input>
+        <el-form-item :label="t('podman.NetworkName')" prop="network">
+          <el-input v-model="form.networkName" :placeholder="t('podman.NetworkName')"> </el-input>
         </el-form-item>
 
-        <el-form-item :label="I18nT('podman.Interactive')" prop="interactive">
+        <el-form-item :label="t('podman.Interactive')" prop="interactive">
           <el-switch v-model="form.interactive" />
         </el-form-item>
 
-        <el-form-item :label="I18nT('podman.TTY')" prop="tty">
+        <el-form-item :label="t('podman.TTY')" prop="tty">
           <el-switch v-model="form.tty" />
         </el-form-item>
 
-        <el-form-item :label="I18nT('podman.RestartPolicy')" prop="restart">
-          <el-select v-model="form.restart" :placeholder="I18nT('podman.RestartPolicy')">
+        <el-form-item :label="t('podman.RestartPolicy')" prop="restart">
+          <el-select v-model="form.restart" :placeholder="t('podman.RestartPolicy')">
             <el-option label="no" value="no" />
             <el-option label="on-failure" value="on-failure" />
             <el-option label="always" value="always" />
@@ -187,8 +174,8 @@
     </el-scrollbar>
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click.stop="onCancel">{{ I18nT('base.cancel') }}</el-button>
-        <el-button type="primary" @click.stop="doSubmit">{{ I18nT('base.confirm') }}</el-button>
+        <el-button @click.stop="onCancel">{{ t('base.cancel') }}</el-button>
+        <el-button type="primary" @click.stop="doSubmit">{{ t('base.confirm') }}</el-button>
       </div>
     </template>
   </el-dialog>
@@ -196,7 +183,8 @@
 
 <script lang="ts" setup>
   import { ref, onMounted, computed, reactive } from 'vue'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { ElMessage } from 'element-plus'
   import { PodmanManager } from '@/components/Podman/class/Podman'
   import type { Image } from '@/components/Podman/class/Image'
@@ -324,15 +312,15 @@
 
   const doSubmit = async () => {
     if (!form.value.name) {
-      ElMessage.error(I18nT('podman.ContainerNameRequired'))
+      ElMessage.error(t('podman.ContainerNameRequired'))
       return
     }
     if (!form.value.image) {
-      ElMessage.error(I18nT('podman.ContainerImageRequired'))
+      ElMessage.error(t('podman.ContainerImageRequired'))
       return
     }
     if (!form.value.dir) {
-      ElMessage.error(I18nT('podman.ComposeFileSaveDir') + I18nT('podman.require'))
+      ElMessage.error(t('podman.ComposeFileSaveDir') + t('podman.require'))
       return
     }
 
@@ -363,7 +351,7 @@
     }
     import('@/components/XTermExecDialog/index.vue').then((res) => {
       AsyncComponentShow(res.default, {
-        title: I18nT('podman.StartWithTerminal'),
+        title: t('podman.StartWithTerminal'),
         item: xtermExec
       }).then(() => {
         machine.value?.fetchContainers?.()

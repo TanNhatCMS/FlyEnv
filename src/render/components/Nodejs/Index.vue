@@ -21,16 +21,18 @@
   import Versions from './List.vue'
   import Config from './Config.vue'
   import { AppModuleSetup } from '@/core/Module'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import Create from './CreateProject.vue'
   import ProjectIndex from './projects/index.vue'
 
   const { tab } = AppModuleSetup('node')
   const tabs = [
-    I18nT('base.service'),
-    I18nT('base.versionManager'),
+    t('base.service'),
+    t('base.versionManager'),
     '.npmrc',
-    I18nT('host.newProject'),
-    I18nT('host.projectNode')
+    t('host.newProject'),
+    t('host.projectNode')
   ]
 </script>

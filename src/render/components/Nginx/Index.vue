@@ -27,15 +27,16 @@
   import Logs from './Logs.vue'
   import Manager from '../VersionManager/index.vue'
   import { AppModuleSetup } from '@/core/Module'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
 
+  const { t } = useI18n()
   const { tab, checkVersion } = AppModuleSetup('nginx')
   const tabs = [
-    I18nT('base.service'),
-    I18nT('base.versionManager'),
-    I18nT('base.configFile'),
-    I18nT('base.errorLog'),
-    I18nT('base.log')
+    t('base.service'),
+    t('base.versionManager'),
+    t('base.configFile'),
+    t('base.errorLog'),
+    t('base.log')
   ]
   checkVersion()
 </script>

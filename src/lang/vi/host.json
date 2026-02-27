@@ -34,6 +34,7 @@
   "projectDeno": "Dự án Deno",
   "projectBun": "Dự án Bun",
   "projectPerl": "Dự án Perl",
+  "projectErlang": "Dự án Erlang",
   "jarPackagePath": "Đường dẫn gói JAR",
   "jdkPath": "Đường dẫn JDK",
   "pythonPath": "Đường dẫn Python",
@@ -67,5 +68,8 @@
   "copyCommand": "Sao chép lệnh",
   "showFile": "Hiển thị tệp",
   "sticky": "Ghim",
-  "dbclickRowToEdit": "Nhấp đúp vào dòng này để chỉnh sửa"
+  "dbclickRowToEdit": "Nhấp đúp vào dòng này để chỉnh sửa",
+
+  "OnlineDomain": "Tên miền trực tuyến",
+  "LocalDoman": "Tên miền Local"
 }

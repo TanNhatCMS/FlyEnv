@@ -11,13 +11,13 @@
       <div class="nav pl-3 pr-5">
         <div class="left" @click="show = false">
           <yb-icon :svg="import('@/svg/delete.svg?raw')" class="top-back-icon" />
-          <span class="ml-3">{{ I18nT('php.phpExtensions') }}</span>
+          <span class="ml-3">{{ t('php.phpExtensions') }}</span>
         </div>
         <el-button-group class="flex-shrink-0">
           <el-tooltip content="php.ini" :show-after="600">
             <el-button :icon="Memo" @click.stop="showIni"></el-button>
           </el-tooltip>
-          <el-tooltip :content="I18nT('base.open')" :show-after="600">
+          <el-tooltip :content="t('base.open')" :show-after="600">
             <el-button :icon="Folder" :disabled="!extensionDir" @click.stop="openDir"></el-button>
           </el-tooltip>
         </el-button-group>
@@ -30,7 +30,7 @@
                 <template v-if="isMacOS">
                   <el-radio-group v-model="lib" size="small">
                     <el-radio-button value="loaded">{{
-                      I18nT('php.loadedExtensions')
+                      t('php.loadedExtensions')
                     }}</el-radio-button>
                     <template v-if="isHomeBrew">
                       <el-radio-button value="homebrew">Homebrew</el-radio-button>
@@ -39,23 +39,23 @@
                       <el-radio-button value="macports">Macports</el-radio-button>
                     </template>
                     <template v-else-if="!isStatic">
-                      <el-radio-button value="flyenv">{{ I18nT('base.default') }}</el-radio-button>
+                      <el-radio-button value="flyenv">{{ t('base.default') }}</el-radio-button>
                     </template>
                   </el-radio-group>
                 </template>
                 <template v-else-if="isWindows">
                   <el-radio-group v-model="lib" size="small">
                     <el-radio-button class="flex-1" value="loaded">{{
-                      I18nT('php.loadedExtensions')
+                      t('php.loadedExtensions')
                     }}</el-radio-button>
                     <el-radio-button
                       class="flex-1"
-                      :label="I18nT('versionmanager.Local')"
+                      :label="t('versionmanager.Local')"
                       value="local"
                     ></el-radio-button>
                     <el-radio-button
                       class="flex-1"
-                      :label="I18nT('versionmanager.Library')"
+                      :label="t('versionmanager.Library')"
                       value="lib"
                     ></el-radio-button>
                   </el-radio-group>
@@ -63,7 +63,7 @@
                 <template v-else-if="isLinux">
                   <el-radio-group v-model="lib" size="small">
                     <el-radio-button value="loaded">{{
-                      I18nT('php.loadedExtensions')
+                      t('php.loadedExtensions')
                     }}</el-radio-button>
                     <template v-if="isHomeBrew">
                       <el-radio-button value="homebrew">Homebrew</el-radio-button>
@@ -101,11 +101,11 @@
           <template v-if="showFooter" #footer>
             <template v-if="taskEnd">
               <el-button type="primary" @click.stop="taskConfirm">{{
-                I18nT('base.confirm')
+                t('base.confirm')
               }}</el-button>
             </template>
             <template v-else>
-              <el-button @click.stop="taskCancel">{{ I18nT('base.cancel') }}</el-button>
+              <el-button @click.stop="taskCancel">{{ t('base.cancel') }}</el-button>
             </template>
           </template>
         </el-card>
@@ -117,7 +117,8 @@
 <script lang="ts" setup>
   import { computed, ref, watch } from 'vue'
   import { type SoftInstalled } from '@/store/brew'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { AsyncComponentSetup, AsyncComponentShow } from '@/util/AsyncComponent'
   import BrewVM from './Extension/Homebrew/index.vue'
   import LoadedVM from './Extension/Loaded/index.vue'

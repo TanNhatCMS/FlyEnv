@@ -39,7 +39,8 @@
   import Conf from '@/components/Conf/drawer.vue'
   import Common from '@/components/Conf/common.vue'
   import { type CommonSetItem, ConfStore } from '@/components/Conf/setup'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { debounce } from 'lodash-es'
   import { SoftInstalled } from '@/store/brew'
   import IPC from '@/util/IPC'
@@ -110,7 +111,7 @@
         }
       ],
       tips() {
-        return I18nT('php.log_errors')
+        return t('php.log_errors')
       }
     },
     {
@@ -120,7 +121,7 @@
       value: '',
       enable: true,
       tips() {
-        return I18nT('php.error_log_dir')
+        return t('php.error_log_dir')
       }
     },
     {
@@ -139,7 +140,7 @@
         }
       ],
       tips() {
-        return I18nT('php.display_errors')
+        return t('php.display_errors')
       }
     },
     {
@@ -158,7 +159,7 @@
         }
       ],
       tips() {
-        return I18nT('php.short_open_tag')
+        return t('php.short_open_tag')
       }
     },
     {
@@ -177,7 +178,7 @@
         }
       ],
       tips() {
-        return I18nT('php.file_uploads')
+        return t('php.file_uploads')
       }
     },
     {
@@ -196,7 +197,7 @@
         }
       ],
       tips() {
-        return I18nT('php.fix_pathinfo')
+        return t('php.fix_pathinfo')
       }
     },
     {
@@ -205,7 +206,7 @@
       value: '300',
       enable: true,
       tips() {
-        return I18nT('php.max_execution_time')
+        return t('php.max_execution_time')
       }
     },
     {
@@ -214,7 +215,7 @@
       value: '60',
       enable: true,
       tips() {
-        return I18nT('php.max_input_time')
+        return t('php.max_input_time')
       }
     },
     {
@@ -223,7 +224,7 @@
       value: '128M',
       enable: true,
       tips() {
-        return I18nT('php.memory_limit')
+        return t('php.memory_limit')
       }
     },
     {
@@ -232,7 +233,7 @@
       value: '20M',
       enable: true,
       tips() {
-        return I18nT('php.post_max_size')
+        return t('php.post_max_size')
       }
     },
     {
@@ -241,7 +242,7 @@
       value: '20M',
       enable: true,
       tips() {
-        return I18nT('php.upload_max_filesize')
+        return t('php.upload_max_filesize')
       }
     },
     {
@@ -250,7 +251,7 @@
       value: '20',
       enable: true,
       tips() {
-        return I18nT('php.max_file_uploads')
+        return t('php.max_file_uploads')
       }
     },
     {
@@ -259,7 +260,7 @@
       value: '60',
       enable: true,
       tips() {
-        return I18nT('php.default_socket_timeout')
+        return t('php.default_socket_timeout')
       }
     },
     {
@@ -268,7 +269,7 @@
       value: 'E_ALL & ~E_NOTICE',
       enable: true,
       tips() {
-        return I18nT('php.error_reporting')
+        return t('php.error_reporting')
       }
     },
     {
@@ -277,7 +278,7 @@
       value: 'PRC',
       enable: true,
       tips() {
-        return I18nT('php.timezone')
+        return t('php.timezone')
       }
     },
     {
