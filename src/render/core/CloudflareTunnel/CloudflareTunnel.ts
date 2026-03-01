@@ -1,17 +1,17 @@
 import IPC from '@/util/IPC'
-import { ZoneType } from '@/core/CloudflareTunnel/type'
+import { CloudflareTunnelDnsRecord, ZoneType } from '@/core/CloudflareTunnel/type'
 import { I18nT } from '@lang/index'
 import { MessageError } from '@/util/Element'
 
 export class CloudflareTunnel {
   id: string = ''
   apiToken: string = ''
+  tunnelId: string = ''
+  tunnelToken: string = ''
+  cloudflaredBin: string = ''
   accountId: string = ''
-  subdomain: string = ''
-  localService: string = ''
 
-  zoneId: string = ''
-  zoneName: string = ''
+  dns: CloudflareTunnelDnsRecord[] = []
 
   pid: string = ''
   run: boolean = false
@@ -43,7 +43,7 @@ export class CloudflareTunnel {
         (key: string, res: any) => {
           IPC.off(key)
           if (res?.code === 0) {
-            this.pid = res?.data?.pid ?? ''
+            this.pid = res?.data?.['APP-Service-Start-PID'] ?? ''
             this.run = true
             resolve(true)
           } else {
