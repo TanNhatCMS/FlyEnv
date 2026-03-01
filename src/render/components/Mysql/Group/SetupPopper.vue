@@ -8,22 +8,22 @@
   >
     <ul v-poper-fix class="host-list-menu">
       <li @click.stop="action('edit')">
-        <span class="ml-3">{{ I18nT('base.edit') }}</span>
+        <span class="ml-3">{{ t('base.edit') }}</span>
       </li>
       <li @click.stop="action('socket')">
-        <span class="ml-3"> {{ I18nT('util.mysqlPopperSocket') }} </span>
+        <span class="ml-3"> {{ t('util.mysqlPopperSocket') }} </span>
       </li>
       <li @click.stop="action('cnf')">
-        <span class="ml-3">{{ I18nT('base.configFile') }}</span>
+        <span class="ml-3">{{ t('base.configFile') }}</span>
       </li>
       <li @click.stop="action('log')">
-        <span class="ml-3">{{ I18nT('base.log') }}</span>
+        <span class="ml-3">{{ t('base.log') }}</span>
       </li>
       <li @click.stop="action('log-slow')">
-        <span class="ml-3">{{ I18nT('base.slowLog') }}</span>
+        <span class="ml-3">{{ t('base.slowLog') }}</span>
       </li>
       <li @click.stop="action('del')">
-        <span class="ml-3">{{ I18nT('base.del') }}</span>
+        <span class="ml-3">{{ t('base.del') }}</span>
       </li>
     </ul>
     <template #reference>
@@ -35,7 +35,9 @@
 </template>
 
 <script lang="ts" setup>
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import { AsyncComponentShow } from '@/util/AsyncComponent'
   import { MessageSuccess } from '@/util/Element'
   import type { MysqlGroupItem } from '@shared/app'
@@ -52,11 +54,11 @@
 
   const copyString = (str: string): void => {
     clipboard.writeText(str)
-    MessageSuccess(I18nT('base.copySuccess'))
+    MessageSuccess(t('base.copySuccess'))
   }
 
   const doDel = (data: MysqlGroupItem) => {
-    Base._Confirm(I18nT('base.areYouSure'), undefined, {
+    Base._Confirm(t('base.areYouSure'), undefined, {
       customClass: 'confirm-del',
       type: 'warning'
     }).then(() => {
@@ -65,7 +67,7 @@
         mysqlStore.stop(data).then(() => {
           mysqlStore.all.splice(index, 1)
           mysqlStore.save().then()
-          MessageSuccess(I18nT('base.success'))
+          MessageSuccess(t('base.success'))
         })
       }
     })

@@ -34,6 +34,7 @@
   "projectDeno": "Projeto Deno",
   "projectBun": "Projeto Bun",
   "projectPerl": "Projeto Perl",
+  "projectErlang": "Projeto Erlang",
   "jarPackagePath": "Caminho do pacote jar",
   "jdkPath": "Caminho do JDK",
   "pythonPath": "Caminho do Python",

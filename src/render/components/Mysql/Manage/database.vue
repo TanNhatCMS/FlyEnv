@@ -6,7 +6,7 @@
     @selection-change="handleSelectionChange"
   >
     <el-table-column type="selection" width="55" />
-    <el-table-column :label="I18nT('mysql.databaseName')" prop="database" width="200px">
+    <el-table-column :label="t('mysql.databaseName')" prop="database" width="200px">
       <template #default="scope">
         <span
           class="truncate hover:text-yellow-500 cursor-pointer"
@@ -15,7 +15,7 @@
         >
       </template>
     </el-table-column>
-    <el-table-column :label="I18nT('mysql.databaseUser')" prop="user" width="200px">
+    <el-table-column :label="t('mysql.databaseUser')" prop="user" width="200px">
       <template #default="scope">
         <span
           class="truncate hover:text-yellow-500 cursor-pointer"
@@ -24,7 +24,7 @@
         >
       </template>
     </el-table-column>
-    <el-table-column :label="I18nT('mysql.databasePassword')" prop="password" width="240px">
+    <el-table-column :label="t('mysql.databasePassword')" prop="password" width="240px">
       <template #default="scope">
         <template v-if="scope.row.password">
           <div class="flex items-center">
@@ -35,27 +35,23 @@
                 >{{ scope.row.password }}</span
               >
               <el-button link @click.stop="scope.row.showPassword = !scope.row?.showPassword">
-                <Hide class="w-4 h-4"
-              /></el-button>
+                <Hide class="w-4 h-4" />
+              </el-button>
             </template>
             <template v-else>
               <span class="mr-3">*********</span>
               <el-button link @click.stop="scope.row.showPassword = !scope.row?.showPassword">
-                <View class="w-4 h-4"
-              /></el-button>
+                <View class="w-4 h-4" />
+              </el-button>
             </template>
             <el-button link style="margin-left: 5px" @click.stop="copyPass(scope.row.password)">
-              <CopyDocument class="p-[1px] w-4 h-4"
-            /></el-button>
+              <CopyDocument class="p-[1px] w-4 h-4" />
+            </el-button>
           </div>
         </template>
       </template>
     </el-table-column>
-    <el-table-column
-      class-name="mysql-database-mark-cell"
-      :label="I18nT('host.comment')"
-      prop="mark"
-    >
+    <el-table-column class-name="mysql-database-mark-cell" :label="t('host.comment')" prop="mark">
       <template #default="scope">
         <div class="w-full h-full flex items-center group">
           <span class="group-hover:hidden">{{ scope.row.mark }}</span>
@@ -67,7 +63,7 @@
         </div>
       </template>
     </el-table-column>
-    <el-table-column :label="I18nT('host.action')" width="100px" align="center">
+    <el-table-column :label="t('host.action')" width="100px" align="center">
       <template #default="scope">
         <el-dropdown>
           <el-button link>
@@ -80,13 +76,13 @@
                   placement="left"
                   :show-after="600"
                   :content="
-                    I18nT('mysql.savePasswordTips', {
+                    t('mysql.savePasswordTips', {
                       app: item.typeFlag === 'mysql' ? 'MySQL' : 'MariaDB'
                     })
                   "
                 >
                   <div class="flex items-center w-full h-full">
-                    {{ I18nT('mysql.savePassword') }}
+                    {{ t('mysql.savePassword') }}
                   </div>
                 </el-tooltip>
               </el-dropdown-item>
@@ -94,10 +90,10 @@
                 <el-tooltip
                   placement="left"
                   :show-after="600"
-                  :content="I18nT('mysql.resetPasswordTips')"
+                  :content="t('mysql.resetPasswordTips')"
                 >
                   <div class="flex items-center w-full h-full">
-                    {{ I18nT('mysql.resetPassword') }}
+                    {{ t('mysql.resetPassword') }}
                   </div>
                 </el-tooltip>
               </el-dropdown-item>
@@ -111,7 +107,9 @@
 <script lang="ts" setup>
   import { computed, reactive, ref } from 'vue'
   import { MySQLManage } from '@/components/Mysql/Manage/manage'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import { View, Hide, CopyDocument } from '@element-plus/icons-vue'
   import type { ModuleInstalledItem } from '@/core/Module/ModuleInstalledItem'
   import { clipboard } from '@/util/NodeFn'
@@ -155,7 +153,7 @@
 
   const copyPass = (str: string): void => {
     clipboard.writeText(str)
-    MessageSuccess(I18nT('base.copySuccess'))
+    MessageSuccess(t('base.copySuccess'))
   }
 
   const onMarkChange = (row: any) => {

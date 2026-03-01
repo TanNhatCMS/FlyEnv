@@ -3,7 +3,7 @@
     <div class="flex items-center">
       <el-button size="small" class="flex-shrink-0" @click="addContainer()">
         <template #default>
-          <span>{{ I18nT('base.add') }}</span>
+          <span>{{ t('base.add') }}</span>
           <template v-if="machine?.containerCreating">
             <el-button link loading></el-button>
           </template>
@@ -17,7 +17,7 @@
       :data="containers"
       style="width: 100%"
     >
-      <el-table-column prop="name" :label="I18nT('podman.Container')">
+      <el-table-column prop="name" :label="t('podman.Container')">
         <template #default="scope">
           <el-tooltip :content="scope.row.name.join(', ')" :disabled="scope.row.name.length <= 1">
             <span
@@ -29,7 +29,7 @@
           </el-tooltip>
         </template>
       </el-table-column>
-      <el-table-column prop="Image" :label="I18nT('podman.Image')">
+      <el-table-column prop="Image" :label="t('podman.Image')">
         <template #default="scope">
           <span
             class="truncate cursor-pointer hover:text-yellow-500"
@@ -39,7 +39,7 @@
           </span>
         </template>
       </el-table-column>
-      <el-table-column prop="running" :label="I18nT('podman.Status')" width="110" align="center">
+      <el-table-column prop="running" :label="t('podman.Status')" width="110" align="center">
         <template #default="scope">
           <template v-if="scope.row?.statusError">
             <el-tooltip :content="scope.row?.statusError">
@@ -69,11 +69,11 @@
           </template>
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="I18nT('podman.Action')" width="100">
+      <el-table-column align="center" :label="t('podman.Action')" width="100">
         <template #default="scope">
           <template v-if="scope.row.pulling">
             <el-button link type="warning" @click.stop="showExec(scope.row)">{{
-              I18nT('base.executing')
+              t('base.executing')
             }}</el-button>
           </template>
           <template v-else>
@@ -86,28 +86,28 @@
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item v-if="scope.row.run" @click.stop="scope.row.stopWithTerminal()">
-                    {{ I18nT('podman.StopWithTerminal') }}
+                    {{ t('podman.StopWithTerminal') }}
                   </el-dropdown-item>
                   <el-dropdown-item v-else @click.stop="scope.row.startWithTerminal()">
-                    {{ I18nT('podman.StartWithTerminal') }}
+                    {{ t('podman.StartWithTerminal') }}
                   </el-dropdown-item>
                   <el-dropdown-item @click.stop="scope.row.showInfo()">
-                    {{ I18nT('base.info') }}
+                    {{ t('base.info') }}
                   </el-dropdown-item>
                   <el-dropdown-item @click.stop="scope.row.showLogsWithTerminal()">
-                    {{ I18nT('base.log') }}
+                    {{ t('base.log') }}
                   </el-dropdown-item>
                   <el-dropdown-item @click.stop="scope.row.showExecCommand()">
-                    {{ I18nT('podman.ExecCommand') }}
+                    {{ t('podman.ExecCommand') }}
                   </el-dropdown-item>
                   <el-dropdown-item @click.stop="scope.row.doExport()">
-                    {{ I18nT('base.export') }}
+                    {{ t('base.export') }}
                   </el-dropdown-item>
                   <el-dropdown-item @click.stop="scope.row.doCommitToImage()">
-                    {{ I18nT('podman.CommitToImage') }}
+                    {{ t('podman.CommitToImage') }}
                   </el-dropdown-item>
                   <el-dropdown-item @click.stop="scope.row.remove()">
-                    {{ I18nT('podman.Delete') }}
+                    {{ t('podman.Delete') }}
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -122,7 +122,8 @@
 <script lang="ts" setup>
   import { computed } from 'vue'
   import { PodmanManager } from '@/components/Podman/class/Podman'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import type { Container } from '@/components/Podman/class/Container'
   import { AsyncComponentShow } from '@/util/AsyncComponent'
   import { clipboard } from '@/util/NodeFn'
@@ -160,7 +161,7 @@
 
   const doCopy = (txt: string) => {
     clipboard.writeText(txt)
-    MessageSuccess(I18nT('base.copySuccess'))
+    MessageSuccess(t('base.copySuccess'))
   }
 
   const showExec = (item: Container) => {

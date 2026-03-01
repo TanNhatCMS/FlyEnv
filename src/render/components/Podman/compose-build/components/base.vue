@@ -1,5 +1,5 @@
 <template>
-  <el-form-item :label="I18nT('base.version')" prop="version">
+  <el-form-item :label="t('base.version')" prop="version">
     <el-select v-model="form.version" filterable>
       <el-option label="latest" value="latest" />
       <template v-for="(v, _v) in versions" :key="_v">
@@ -7,7 +7,7 @@
       </template>
     </el-select>
   </el-form-item>
-  <el-form-item :label="I18nT('podman.PortBind')">
+  <el-form-item :label="t('podman.PortBind')">
     <div class="w-full flex flex-col gap-3">
       <template v-for="(p, _p) in form.ports" :key="_p">
         <div class="w-full flex items-center justify-between">
@@ -15,17 +15,17 @@
             v-model="p.in"
             readonly
             disabled
-            :placeholder="I18nT('podman.ContainerPort')"
+            :placeholder="t('podman.ContainerPort')"
             class="flex-1"
           >
             <template #prefix>
-              <span>{{ I18nT('podman.ContainerPort') }}</span>
+              <span>{{ t('podman.ContainerPort') }}</span>
             </template>
           </el-input>
           <span class="mx-3 flex-shrink-0">→</span>
-          <el-input v-model="p.out" :placeholder="I18nT('podman.LocalPort')" class="flex-1">
+          <el-input v-model="p.out" :placeholder="t('podman.LocalPort')" class="flex-1">
             <template #prefix>
-              <span>{{ I18nT('podman.LocalPort') }}</span>
+              <span>{{ t('podman.LocalPort') }}</span>
             </template>
           </el-input>
         </div>
@@ -37,7 +37,8 @@
 <script lang="ts" setup>
   import { computed, onMounted, onUnmounted } from 'vue'
   import { ComposeBuildForm } from '@/components/Podman/compose-build/Form'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { PodmanManager } from '../../class/Podman'
 
   const props = defineProps<{

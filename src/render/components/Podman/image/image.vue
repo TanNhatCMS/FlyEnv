@@ -1,12 +1,12 @@
 <template>
   <div class="w-full h-full overflow-hidden flex flex-col gap-2 items-start">
     <div class="flex items-center">
-      <el-button size="small" class="flex-shrink-0" @click="addImage()">{{
-        I18nT('base.add')
-      }}</el-button>
+      <el-button size="small" class="flex-shrink-0" @click="addImage()"
+        >{{ t('base.add') }}
+      </el-button>
       <el-button size="small" class="flex-shrink-0" @click="importImage()">
         <template #default>
-          <span>{{ I18nT('base.import') }}</span>
+          <span>{{ t('base.import') }}</span>
           <template v-if="machine?.imageImporting">
             <el-button link loading></el-button>
           </template>
@@ -20,7 +20,7 @@
       :data="images"
       style="width: 100%"
     >
-      <el-table-column prop="name" :label="I18nT('podman.Image')">
+      <el-table-column prop="name" :label="t('podman.Image')">
         <template #default="scope">
           <el-tooltip
             :content="scope.row?.name?.join(', ')"
@@ -35,7 +35,7 @@
           </el-tooltip>
         </template>
       </el-table-column>
-      <el-table-column prop="size" width="120px" :label="I18nT('podman.Size')">
+      <el-table-column prop="size" width="120px" :label="t('podman.Size')">
         <template #default="scope">
           <template v-if="scope.row.pulling && !scope.row.size">
             <el-button loading link></el-button>
@@ -45,13 +45,13 @@
           </template>
         </template>
       </el-table-column>
-      <el-table-column prop="created" width="170px" :label="I18nT('podman.Created')" />
-      <el-table-column align="center" :label="I18nT('podman.Action')" width="100">
+      <el-table-column prop="created" width="170px" :label="t('podman.Created')" />
+      <el-table-column align="center" :label="t('podman.Action')" width="100">
         <template #default="scope">
           <template v-if="scope.row.pulling">
-            <el-button link type="warning" @click.stop="showExec(scope.row)">{{
-              I18nT('base.executing')
-            }}</el-button>
+            <el-button link type="warning" @click.stop="showExec(scope.row)"
+              >{{ t('base.executing') }}
+            </el-button>
           </template>
           <template v-else>
             <el-dropdown>
@@ -63,13 +63,13 @@
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item @click.stop="scope.row.doExport()">
-                    {{ I18nT('base.export') }}
+                    {{ t('base.export') }}
                   </el-dropdown-item>
                   <el-dropdown-item @click.stop="doRename(scope.row)">
-                    {{ I18nT('podman.Rename') }}
+                    {{ t('podman.Rename') }}
                   </el-dropdown-item>
                   <el-dropdown-item @click.stop="scope.row.remove()">
-                    {{ I18nT('podman.Delete') }}
+                    {{ t('podman.Delete') }}
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -84,7 +84,9 @@
 <script lang="ts" setup>
   import { computed } from 'vue'
   import { PodmanManager } from '@/components/Podman/class/Podman'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import type { Image } from '@/components/Podman/class/Image'
   import { AsyncComponentShow } from '@/util/AsyncComponent'
   import { clipboard } from '@/util/NodeFn'
@@ -121,7 +123,7 @@
 
   const doCopy = (txt: string) => {
     clipboard.writeText(txt)
-    MessageSuccess(I18nT('base.copySuccess'))
+    MessageSuccess(t('base.copySuccess'))
   }
 
   const showExec = (item: Image) => {

@@ -20,7 +20,8 @@
   import { computed } from 'vue'
   import { AppStore } from '@/store/app'
   import { BrewStore } from '@/store/brew'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { MessageError, MessageSuccess } from '@/util/Element'
   import { AppServiceModule, AsideSetup } from '@/core/ASide'
 
@@ -61,7 +62,7 @@
         if (find) {
           MessageError(find)
         } else {
-          MessageSuccess(I18nT('base.success'))
+          MessageSuccess(t('base.success'))
         }
       })
     }

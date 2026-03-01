@@ -2,7 +2,7 @@
   <el-form :model="form" label-position="top">
     <BaseVM :image="image" :form-name="formName" />
 
-    <el-form-item :label="I18nT('podman.Persistence')" prop="persistence">
+    <el-form-item :label="t('podman.Persistence')" prop="persistence">
       <el-switch v-model="form.persistence"></el-switch>
     </el-form-item>
 
@@ -24,7 +24,8 @@
 <script lang="ts" setup>
   import { computed } from 'vue'
   import { ComposeBuildForm } from '@/components/Podman/compose-build/Form'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { OfficialImages } from '@/components/Podman/officialImages'
   import BaseVM from '@/components/Podman/compose-build/components/base.vue'
   import PreviewVM from '@/components/Podman/compose-build/components/preview.vue'

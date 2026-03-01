@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="show"
-    :title="I18nT('mysql.rootPasswordChange', { user })"
+    :title="t('mysql.rootPasswordChange', { user })"
     width="600px"
     :destroy-on-close="true"
     class="host-edit new-project"
@@ -18,25 +18,25 @@
     </template>
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="show = false">{{ I18nT('base.cancel') }}</el-button>
+        <el-button @click="show = false">{{ t('base.cancel') }}</el-button>
         <template v-if="showResetBtn">
-          <el-tooltip :content="I18nT('mysql.resetPasswordTips')">
-            <el-button :loading="updating" :disabled="updating" type="warning" @click="doRest">{{
-              I18nT('mysql.resetPassword')
-            }}</el-button>
+          <el-tooltip :content="t('mysql.resetPasswordTips')">
+            <el-button :loading="updating" :disabled="updating" type="warning" @click="doRest"
+              >{{ t('mysql.resetPassword') }}
+            </el-button>
           </el-tooltip>
         </template>
         <template v-if="showUpdateBtn">
           <el-tooltip
             :content="
-              I18nT('mysql.savePasswordTips', {
+              t('mysql.savePasswordTips', {
                 app: item.typeFlag === 'mysql' ? 'MySQL' : 'MariaDB'
               })
             "
           >
-            <el-button :loading="updating" :disabled="updating" type="primary" @click="doSave">{{
-              I18nT('mysql.savePassword')
-            }}</el-button>
+            <el-button :loading="updating" :disabled="updating" type="primary" @click="doSave"
+              >{{ t('mysql.savePassword') }}
+            </el-button>
           </el-tooltip>
         </template>
       </div>
@@ -46,7 +46,9 @@
 <script lang="ts" setup>
   import { computed, reactive, ref } from 'vue'
   import { AsyncComponentSetup } from '@/util/AsyncComponent'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import type { ModuleInstalledItem } from '@/core/Module/ModuleInstalledItem'
   import { MySQLManage } from './manage'
   import { uuid } from '@/util/Index'
@@ -87,9 +89,9 @@
   }
 
   const doRest = () => {
-    ElMessageBox.confirm(I18nT('mysql.resetPasswordConfirm'), I18nT('host.warning'), {
-      confirmButtonText: I18nT('base.confirm'),
-      cancelButtonText: I18nT('base.cancel'),
+    ElMessageBox.confirm(t('mysql.resetPasswordConfirm'), t('host.warning'), {
+      confirmButtonText: t('base.confirm'),
+      cancelButtonText: t('base.cancel'),
       type: 'warning'
     })
       .then(() => {
@@ -112,7 +114,7 @@
     }
     MySQLManage.userPassword[props.item.bin][props.user] = password.value
     MySQLManage.save()
-    MessageSuccess(I18nT('base.success'))
+    MessageSuccess(t('base.success'))
   }
 
   defineExpose({

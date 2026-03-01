@@ -29,10 +29,10 @@
             </div>
           </template>
           <el-radio-group v-model="machine.tab" size="small">
-            <el-radio-button value="Dashboard" :label="I18nT('podman.Dashboard')"></el-radio-button>
+            <el-radio-button value="Dashboard" :label="t('podman.Dashboard')"></el-radio-button>
             <el-radio-button value="Compose" label="Compose"></el-radio-button>
-            <el-radio-button value="Image" :label="I18nT('podman.Image')"></el-radio-button>
-            <el-radio-button value="Container" :label="I18nT('podman.Container')"></el-radio-button>
+            <el-radio-button value="Image" :label="t('podman.Image')"></el-radio-button>
+            <el-radio-button value="Container" :label="t('podman.Container')"></el-radio-button>
           </el-radio-group>
         </div>
         <el-button class="button" :disabled="refreshDisabled" link @click="doRefresh">
@@ -46,10 +46,10 @@
     </template>
     <template #default>
       <template v-if="!machine?.name">
-        <el-empty :description="I18nT('podman.machineIsEmpty')"></el-empty>
+        <el-empty :description="t('podman.machineIsEmpty')"></el-empty>
       </template>
       <template v-else-if="!machine?.run">
-        <el-empty :description="I18nT('podman.machineNeedRun')"></el-empty>
+        <el-empty :description="t('podman.machineNeedRun')"></el-empty>
       </template>
       <template v-else>
         <template v-if="machine.tab === 'Dashboard'">
@@ -72,11 +72,13 @@
 <script lang="ts" setup>
   import { computed } from 'vue'
   import { PodmanManager } from './class/Podman'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
   import DashboradVM from './dashboard.vue'
   import ImageVM from './image/image.vue'
   import ComposeVM from './compose/compose.vue'
   import ContainerVM from './container/container.vue'
+
+  const { t } = useI18n()
 
   const machine = computed(() => {
     return PodmanManager.machine.find((m) => m.name === PodmanManager.tab)

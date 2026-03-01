@@ -5,18 +5,22 @@
     </div>
   </template>
   <el-table v-else v-loading="fetching" height="100%" :data="tableData" style="width: 100%">
-    <el-table-column prop="name" class-name="name-cell-td" :label="I18nT('base.name')">
+    <el-table-column prop="name" class-name="name-cell-td" :label="t('base.name')">
       <template #header>
         <div class="w-full name-cell">
-          <span style="display: inline-flex; padding: 2px 0">{{ I18nT('base.name') }}</span>
-          <el-input v-model.trim="search" :placeholder="I18nT('base.placeholderSearch')" clearable></el-input>
+          <span style="display: inline-flex; padding: 2px 0">{{ t('base.name') }}</span>
+          <el-input
+            v-model.trim="search"
+            :placeholder="t('base.placeholderSearch')"
+            clearable
+          ></el-input>
         </div>
       </template>
       <template #default="scope">
         <div style="padding: 2px 0 2px 24px">{{ scope.row.name }}</div>
       </template>
     </el-table-column>
-    <el-table-column align="center" :label="I18nT('base.status')">
+    <el-table-column align="center" :label="t('base.status')">
       <template #default="scope">
         <div class="cell-status">
           <yb-icon
@@ -28,17 +32,12 @@
       </template>
     </el-table-column>
 
-    <el-table-column
-      width="150px"
-      align="left"
-      :label="I18nT('base.action')"
-      class-name="operation"
-    >
+    <el-table-column width="150px" align="left" :label="t('base.action')" class-name="operation">
       <template v-if="version?.version" #default="scope">
         <template v-if="scope.row.status">
           <el-popover :show-after="600" placement="top" width="auto">
             <template #default>
-              <span>{{ I18nT('base.copyLink') }}</span>
+              <span>{{ t('base.copyLink') }}</span>
             </template>
             <template #reference>
               <el-button type="primary" link :icon="Link" @click="copyLink(scope.row)"></el-button>
@@ -47,7 +46,7 @@
           <template v-if="scope.row.name === 'xdebug'">
             <el-popover :show-after="600" placement="top" width="auto">
               <template #default>
-                <span>{{ I18nT('php.copyConfTemplate') }}</span>
+                <span>{{ t('php.copyConfTemplate') }}</span>
               </template>
               <template #reference>
                 <el-button
@@ -61,7 +60,7 @@
           </template>
           <el-popover :show-after="600" placement="top" width="auto">
             <template #default>
-              <span>{{ I18nT('base.del') }}</span>
+              <span>{{ t('base.del') }}</span>
             </template>
             <template #reference>
               <el-button type="primary" link :icon="Delete" @click="doDel(scope.row)"></el-button>
@@ -71,7 +70,7 @@
         <template v-else>
           <el-popover :show-after="600" placement="top" width="auto">
             <template #default>
-              <span>{{ I18nT('base.install') }}</span>
+              <span>{{ t('base.install') }}</span>
             </template>
             <template #reference>
               <el-button
@@ -92,7 +91,8 @@
 <script lang="ts" setup>
   import { type SoftInstalled } from '@/store/brew'
   import { MacPortsSetup, Setup } from './setup'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { Link, Document, Download, Delete } from '@element-plus/icons-vue'
 
   const props = defineProps<{

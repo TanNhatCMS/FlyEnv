@@ -11,7 +11,7 @@
   import IPC from '@/util/IPC'
   import { AppStore } from '@/store/app'
   import { BrewStore } from '@/store/brew'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
   import Base from '@/core/Base'
   import { MessageSuccess } from '@/util/Element'
   import FloatButton from '@/components/FloatBtn/index.vue'
@@ -22,6 +22,7 @@
   import { nativeTheme, shell } from '@/util/NodeFn'
   import localForage from 'localforage'
 
+  const { t } = useI18n()
   const appStore = AppStore()
   const brewStore = BrewStore()
 
@@ -73,7 +74,7 @@
   const showAbout = () => {
     Base.Dialog(import('./components/About/index.vue'))
       .className('about-dialog')
-      .title(I18nT('base.about'))
+      .title(t('base.about'))
       .width('665px')
       .noFooter()
       .show()
@@ -144,7 +145,7 @@
       console.log('sysetmProxy: ', res)
       const proxy = res?.data ?? {}
       if (Object.keys(proxy).length > 0) {
-        Base._Confirm(I18nT('tools.systemProxyCheck'), undefined, {
+        Base._Confirm(t('tools.systemProxyCheck'), undefined, {
           customClass: 'confirm-del',
           type: 'warning'
         }).then(() => {
@@ -155,7 +156,7 @@
           appStore.config.setup.proxy.on = true
           appStore.config.setup.proxy.proxy = arr.join(' ')
           appStore.saveConfig()
-          MessageSuccess(I18nT('tools.systemProxyUsed'))
+          MessageSuccess(t('tools.systemProxyUsed'))
         })
         localStorage.setItem('FlyEnv-Checked-Proxy', 'true')
       }
@@ -198,7 +199,7 @@
 
   onMounted(() => {
     init()
-    brewStore.cardHeadTitle = I18nT('base.currentVersionLib')
+    brewStore.cardHeadTitle = t('base.currentVersionLib')
   })
 
   onUnmounted(() => {

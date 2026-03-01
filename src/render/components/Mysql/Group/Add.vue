@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="show"
-    :title="item?.dataDir ? I18nT('base.edit') : I18nT('base.add')"
+    :title="item?.dataDir ? t('base.edit') : t('base.add')"
     width="600px"
     :destroy-on-close="true"
     class="host-edit new-project"
@@ -37,7 +37,7 @@
               class="input"
               :class="{ error: errs?.dataDir }"
               placeholder="MySQL Data Directory"
-              readonly="true"
+              readonly="readonly"
               :value="form.dataDir"
             />
             <div class="icon-block" @click="chooseRoot()">
@@ -54,10 +54,10 @@
     </template>
     <template #footer>
       <div class="dialog-footer">
-        <el-button :disabled="running" @click="show = false">{{ I18nT('base.cancel') }}</el-button>
-        <el-button :loading="running" :disabled="running" type="primary" @click="doSave">{{
-          I18nT('base.confirm')
-        }}</el-button>
+        <el-button :disabled="running" @click="show = false">{{ t('base.cancel') }}</el-button>
+        <el-button :loading="running" :disabled="running" type="primary" @click="doSave"
+          >{{ t('base.confirm') }}
+        </el-button>
       </div>
     </template>
   </el-dialog>
@@ -65,7 +65,9 @@
 <script lang="ts" setup>
   import { computed, ref, watch } from 'vue'
   import { AsyncComponentSetup } from '@/util/AsyncComponent'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import { uuid } from '@/util/Index'
   import { BrewStore } from '@/store/brew'
   import { MessageSuccess } from '@/util/Element'
@@ -180,7 +182,7 @@
     }
 
     mysqlStore.save()
-    MessageSuccess(I18nT('base.success'))
+    MessageSuccess(t('base.success'))
     running.value = false
     show.value = false
   }

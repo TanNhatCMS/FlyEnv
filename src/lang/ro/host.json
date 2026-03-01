@@ -34,6 +34,7 @@
   "projectDeno": "Proiecte Deno",
   "projectBun": "Proiecte de Bun",
   "projectPerl": "Proiecte Perl",
+  "projectErlang": "Proiecte Erlang",
   "jarPackagePath": "Calea JAR a pachetului",
   "jdkPath": "Cale JDK",
   "pythonPath": "Python Path",

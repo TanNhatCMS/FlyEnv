@@ -2,26 +2,26 @@
   <el-form :model="form" label-position="top">
     <BaseVM :image="image" :form-name="formName" />
 
-    <el-form-item :label="I18nT('podman.Persistence')" prop="persistence">
+    <el-form-item :label="t('podman.Persistence')" prop="persistence">
       <el-switch v-model="form.persistence"></el-switch>
     </el-form-item>
 
-    <el-form-item :label="I18nT('podman.MYSQL_ROOT_PASSWORD')">
+    <el-form-item :label="t('podman.MYSQL_ROOT_PASSWORD')">
       <el-input
         v-model="form.environment.MYSQL_ROOT_PASSWORD"
         placeholder="MYSQL_ROOT_PASSWORD"
       ></el-input>
     </el-form-item>
 
-    <el-form-item :label="I18nT('podman.MYSQL_DATABASE')">
+    <el-form-item :label="t('podman.MYSQL_DATABASE')">
       <el-input v-model="form.environment.MYSQL_DATABASE" placeholder="MYSQL_DATABASE"></el-input>
     </el-form-item>
 
-    <el-form-item :label="I18nT('podman.MYSQL_USER')">
+    <el-form-item :label="t('podman.MYSQL_USER')">
       <el-input v-model="form.environment.MYSQL_USER" placeholder="MYSQL_USER"></el-input>
     </el-form-item>
 
-    <el-form-item :label="I18nT('podman.MYSQL_PASSWORD')">
+    <el-form-item :label="t('podman.MYSQL_PASSWORD')">
       <el-input v-model="form.environment.MYSQL_PASSWORD" placeholder="MYSQL_PASSWORD"></el-input>
     </el-form-item>
 
@@ -32,7 +32,8 @@
 <script lang="ts" setup>
   import { computed } from 'vue'
   import { ComposeBuildForm } from '@/components/Podman/compose-build/Form'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { OfficialImages } from '@/components/Podman/officialImages'
   import BaseVM from '@/components/Podman/compose-build/components/base.vue'
   import PreviewVM from '@/components/Podman/compose-build/components/preview.vue'

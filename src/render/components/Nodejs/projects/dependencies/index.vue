@@ -10,12 +10,12 @@
             :loading="checking"
             plain
             @click.stop="doCheck"
-            >{{ I18nT('nodejs.checkPackageJsonUpdate') }}</el-button
+            >{{ t('nodejs.checkPackageJsonUpdate') }}</el-button
           >
-          <el-popconfirm :title="I18nT('nodejs.updatePackageJsonFileTips')" @confirm="doUpdate">
+          <el-popconfirm :title="t('nodejs.updatePackageJsonFileTips')" @confirm="doUpdate">
             <template #reference>
               <el-button :disabled="updateDisabled" :loading="updating" size="small" plain>{{
-                I18nT('nodejs.updatePackageJsonFile')
+                t('nodejs.updatePackageJsonFile')
               }}</el-button>
             </template>
           </el-popconfirm>
@@ -79,7 +79,8 @@
   import { MessageError } from '@/util/Element'
   import { ElMessage } from 'element-plus'
   import type { TableInstance } from 'element-plus'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { join } from '@/util/path-browserify'
   import { shell, fs } from '@/util/NodeFn'
   import { asyncComputed } from '@vueuse/core'

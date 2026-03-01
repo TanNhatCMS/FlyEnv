@@ -3,7 +3,7 @@
     <template #header>
       <div class="card-header">
         <div class="left">
-          <span> {{ I18nT('ollama.model') }} </span>
+          <span> {{ t('ollama.model') }} </span>
           <el-button class="button" link @click="openURL('https://ollama.com/search')">
             <yb-icon
               style="width: 20px; height: 20px"
@@ -13,12 +13,12 @@
           <el-radio-group v-model="OllamaModelsSetup.tab" size="small" class="ml-6">
             <el-radio-button
               class="flex-1"
-              :label="I18nT('versionmanager.Local')"
+              :label="t('versionmanager.Local')"
               value="local"
             ></el-radio-button>
             <el-radio-button
               class="flex-1"
-              :label="I18nT('base.Library')"
+              :label="t('base.Library')"
               value="all"
             ></el-radio-button>
           </el-radio-group>
@@ -41,17 +41,19 @@
 
     <template v-if="showFooter" #footer>
       <template v-if="taskEnd">
-        <el-button type="primary" @click.stop="taskConfirm">{{ I18nT('base.confirm') }}</el-button>
+        <el-button type="primary" @click.stop="taskConfirm">{{ t('base.confirm') }}</el-button>
       </template>
       <template v-else>
-        <el-button @click.stop="taskCancel">{{ I18nT('base.cancel') }}</el-button>
+        <el-button @click.stop="taskCancel">{{ t('base.cancel') }}</el-button>
       </template>
     </template>
   </el-card>
 </template>
 
 <script lang="ts" setup>
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import { OllamaModelsSetup, SetupAll } from './setup'
   import LocalVM from './local/index.vue'
   import AllVM from './all/index.vue'

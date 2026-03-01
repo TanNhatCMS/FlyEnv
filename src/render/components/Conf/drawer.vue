@@ -9,24 +9,24 @@
   </div>
   <div class="tool gap-3">
     <el-radio-group v-if="showCommond" v-model="type" size="small">
-      <el-tooltip :show-after="600" :content="I18nT('conf.rawFile')" placement="top">
+      <el-tooltip :show-after="600" :content="t('conf.rawFile')" placement="top">
         <el-radio-button value="default">
           <Document class="w-5 h-5 p-0.5" />
         </el-radio-button>
       </el-tooltip>
-      <el-tooltip :show-after="600" :content="I18nT('conf.CommonSetting')" placement="top">
+      <el-tooltip :show-after="600" :content="t('conf.CommonSetting')" placement="top">
         <el-radio-button value="common">
           <Operation class="w-5 h-5 p-0.5" />
         </el-radio-button>
       </el-tooltip>
     </el-radio-group>
     <el-button-group>
-      <el-tooltip :show-after="600" :content="I18nT('conf.open')" placement="top">
+      <el-tooltip :show-after="600" :content="t('conf.open')" placement="top">
         <el-button :disabled="disabled" @click="openConfig">
           <FolderOpened class="w-5 h-5 p-0.5" />
         </el-button>
       </el-tooltip>
-      <el-tooltip :show-after="600" :content="I18nT('conf.save')" placement="top">
+      <el-tooltip :show-after="600" :content="t('conf.save')" placement="top">
         <el-button :disabled="disabled" @click="saveConfig">
           <el-badge is-dot :offset="[8, 1]" :hidden="!changed">
             <yb-icon :svg="import('@/svg/save.svg?raw')" class="w-5 h-5 p-0.5" />
@@ -34,9 +34,9 @@
         </el-button>
       </el-tooltip>
       <el-tooltip
-        v-if="showLoadDefault !== false"
+        v-if="showLoadDefault"
         :show-after="600"
-        :content="I18nT('conf.loadDefault')"
+        :content="t('conf.loadDefault')"
         placement="top"
       >
         <el-button :disabled="disabled || defaultDisabled" @click="getDefault">
@@ -45,12 +45,12 @@
       </el-tooltip>
     </el-button-group>
     <el-button-group>
-      <el-tooltip :show-after="600" :content="I18nT('conf.loadCustom')" placement="top">
+      <el-tooltip :show-after="600" :content="t('conf.loadCustom')" placement="top">
         <el-button :disabled="disabled" @click="loadCustom">
           <yb-icon :svg="import('@/svg/custom.svg?raw')" class="w-5 h-5 p-0.5" />
         </el-button>
       </el-tooltip>
-      <el-tooltip :show-after="600" :content="I18nT('conf.saveCustom')" placement="top">
+      <el-tooltip :show-after="600" :content="t('conf.saveCustom')" placement="top">
         <el-button :disabled="disabled" @click="saveCustom">
           <yb-icon :svg="import('@/svg/saveas.svg?raw')" class="w-5 h-5 p-0.5" />
         </el-button>
@@ -71,7 +71,8 @@
   import { Document, Operation, FolderOpened } from '@element-plus/icons-vue'
   import type { AllAppModule } from '@/core/type'
   import { ConfSetup } from '@/components/Conf/setup'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import type { SoftInstalled } from '@/store/brew'
 
   const props = withDefaults(

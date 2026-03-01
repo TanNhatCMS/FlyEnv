@@ -1,13 +1,13 @@
 <template>
   <el-dialog
     v-model="show"
-    :title="I18nT('podman.Image') + I18nT('base.add')"
+    :title="t('podman.Image') + t('base.add')"
     width="600px"
     class="host-edit new-project"
     @closed="closedFn"
   >
     <el-form :model="form" label-width="110px" label-position="top" class="pt-2">
-      <el-form-item :label="I18nT('podman.PresetModule')">
+      <el-form-item :label="t('podman.PresetModule')">
         <el-cascader
           v-model="form.version"
           filterable
@@ -16,17 +16,17 @@
           :options="presets"
         />
       </el-form-item>
-      <el-form-item :label="I18nT('podman.DockerImageMirror')" prop="flag">
+      <el-form-item :label="t('podman.DockerImageMirror')" prop="flag">
         <el-autocomplete v-model="form.mirror" :fetch-suggestions="querySearch" clearable />
       </el-form-item>
-      <el-form-item :label="I18nT('podman.Image')" prop="name" required>
-        <el-input v-model="form.name" :placeholder="I18nT('podman.NamePlaceholder')" />
+      <el-form-item :label="t('podman.Image')" prop="name" required>
+        <el-input v-model="form.name" :placeholder="t('podman.NamePlaceholder')" />
       </el-form-item>
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="onCancel">{{ I18nT('base.cancel') }}</el-button>
-        <el-button type="primary" @click="doSubmit">{{ I18nT('base.confirm') }}</el-button>
+        <el-button @click="onCancel">{{ t('base.cancel') }}</el-button>
+        <el-button type="primary" @click="doSubmit">{{ t('base.confirm') }}</el-button>
       </div>
     </template>
   </el-dialog>
@@ -34,7 +34,8 @@
 
 <script lang="ts" setup>
   import { computed, ref, watch } from 'vue'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { ElMessage } from 'element-plus'
   import { PodmanManager } from '@/components/Podman/class/Podman'
   import { OfficialImages } from '@/components/Podman/officialImages'
@@ -67,11 +68,11 @@
       children: AllAppModule[]
     }> = [
       {
-        label: I18nT(`aside.webServer`),
+        label: t(`aside.webServer`),
         children: ['apache', 'caddy', 'consul', 'nginx', 'tomcat']
       },
       {
-        label: I18nT(`aside.language`),
+        label: t(`aside.language`),
         children: [
           'bun',
           'deno',
@@ -86,19 +87,19 @@
         ]
       },
       {
-        label: I18nT(`aside.dataBaseServer`),
+        label: t(`aside.dataBaseServer`),
         children: ['mariadb', 'mongodb', 'mysql', 'postgresql']
       },
       {
-        label: I18nT(`aside.dataQueue`),
+        label: t(`aside.dataQueue`),
         children: ['etcd', 'memcached', 'rabbitmq', 'redis']
       },
       {
-        label: I18nT(`aside.emailServer`),
+        label: t(`aside.emailServer`),
         children: ['mailpit']
       },
       {
-        label: I18nT(`aside.searchEngine`),
+        label: t(`aside.searchEngine`),
         children: ['elasticsearch', 'meilisearch']
       }
     ]
@@ -161,7 +162,7 @@
 
   const doSubmit = async () => {
     if (!form.value.name) {
-      ElMessage.error(I18nT('podman.Image') + I18nT('podman.require'))
+      ElMessage.error(t('podman.Image') + t('podman.require'))
       return
     }
     show.value = false

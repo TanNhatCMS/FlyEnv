@@ -22,7 +22,7 @@
       ></Manager>
       <ProjectIndex
         v-else-if="tab === 2"
-        :title="I18nT('host.projectDeno')"
+        :title="t('host.projectDeno')"
         :type-flag="'deno'"
       ></ProjectIndex>
     </div>
@@ -33,9 +33,10 @@
   import Service from '@/components/ServiceManager/base.vue'
   import Manager from '../VersionManager/index.vue'
   import { AppModuleSetup } from '@/core/Module'
-  import { I18nT } from '@lang/index'
   import ProjectIndex from '@/components/LanguageProjects/index.vue'
+  import { useI18n } from 'vue-i18n'
 
+  const { t } = useI18n()
   const { tab } = AppModuleSetup('deno')
-  const tabs = [I18nT('base.service'), I18nT('base.versionManager'), I18nT('host.projectDeno')]
+  const tabs = [t('base.service'), t('base.versionManager'), t('host.projectDeno')]
 </script>
