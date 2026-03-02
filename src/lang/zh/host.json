@@ -34,6 +34,10 @@
   "projectDeno": "Deno项目",
   "projectBun": "Bun项目",
   "projectPerl": "Perl项目",
+  "projectRuby": "Ruby项目",
+  "projectRust": "Rust项目",
+  "projectZig": "Zig项目",
+  "targetPlatforms": "目标平台",
   "jarPackagePath": "jar包路径",
   "jdkPath": "jdk路径",
   "pythonPath": "Python路径",
@@ -73,6 +77,9 @@
   "LocalDoman": "本地域名",
   "CloudflareTunnel": {
     "OnlineDomainExistsTips": "相同的线上域名已存在",
-    "CloudflaredNoFoundTips": "未找到Cloudflared，请先安装"
+    "CloudflaredNoFoundTips": "未找到Cloudflared，请先安装",
+    "TunnelInitFailTips": "隧道创建失败: {error}. 请检查ApiToken是否正确, 以及是否有Cloudflare Tunnel编辑权限.",
+    "TunnelRule": "隧道规则",
+    "licenseTips": "未获得许可证, 只可以创建一个隧道， 一组解析"
   }
 }

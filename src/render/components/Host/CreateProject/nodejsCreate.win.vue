@@ -195,9 +195,6 @@
       command.push(
         `$env:npm_config_cache="${join(window.Server.UserHome!, 'AppData/Local/npm-cache')}"`
       )
-      command.push(
-        `$env:npm_config_cache="${join(window.Server.UserHome!, 'AppData/Local/npm-cache')}"`
-      )
     }
     command.push(`cd "${form.dir}"`)
     const arr = item?.commandWin?.split(';') ?? item?.command?.split(';') ?? []

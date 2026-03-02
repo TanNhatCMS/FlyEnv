@@ -8,8 +8,10 @@ export type ZoneType = {
 }
 
 export type CloudflareTunnelDnsRecord = {
+  id: string
   subdomain: string
   localService: string
   zoneId: string
   zoneName: string
+  protocol: 'http' | 'https'
 }

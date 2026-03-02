@@ -35,7 +35,10 @@
   "projectDeno": "Deno Projects",
   "projectBun": "Bun Projects",
   "projectPerl": "Perl Projects",
-
+  "projectRuby": "Ruby Projects",
+  "projectRust": "Rust Projects",
+  "projectZig": "Zig Projects",
+  "targetPlatforms": "Target Platforms",
   "jarPackagePath": "JAR Package Path",
   "jdkPath": "JDK Path",
   "pythonPath": "Python Path",
@@ -75,6 +78,9 @@
   "LocalDoman": "Local Domain",
   "CloudflareTunnel": {
     "OnlineDomainExistsTips": "The same online domain name already exists.",
-    "CloudflaredNoFoundTips": "Cloudflared not found. Please install it."
+    "CloudflaredNoFoundTips": "Cloudflared not found. Please install it.",
+    "TunnelInitFailTips": "Tunnel creation failed: {error}. Please check if the ApiToken is correct and ensure you have Cloudflare Tunnel edit permissions.",
+    "TunnelRule": "Tunnel Rule",
+    "licenseTips": "Without obtaining a license, You can only create one tunnel and one set of host records."
   }
 }

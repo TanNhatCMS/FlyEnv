@@ -31,7 +31,7 @@
                     <el-button
                       link
                       class="absolute right-2 bottom-2 hidden group-hover:inline-flex"
-                      @click="openURL(p.url)"
+                      @click="openURL($event, p.url)"
                     >
                       <yb-icon
                         style="width: 20px; height: 20px"
@@ -107,7 +107,9 @@
     cb(results)
   }
 
-  const openURL = (url: string) => {
+  const openURL = (e: MouseEvent, url: string) => {
+    e?.preventDefault?.()
+    e?.stopPropagation?.()
     shell.openExternal(url)
   }
 

@@ -3,7 +3,12 @@ import { computed, reactive } from 'vue'
 import CloudflareTunnelStore from '@/core/CloudflareTunnel/CloudflareTunnelStore'
 import { AppStore } from '@/store/app'
 import { AsyncComponentShow } from '@/util/AsyncComponent'
-import type { ZoneType } from '@/core/CloudflareTunnel/type'
+import { CloudflareTunnelDnsRecord, ZoneType } from '@/core/CloudflareTunnel/type'
+import Base from '@/core/Base'
+import { I18nT } from '@lang/index'
+import { clipboard, shell } from '@/util/NodeFn'
+import { MessageError, MessageSuccess } from '@/util/Element'
+import { SetupStore } from '@/components/Setup/store'
 
 export const ZoneDict: Record<string, ZoneType[]> = reactive({})
 
@@ -20,6 +25,10 @@ export const Setup = () => {
   })
 
   function add() {
+    if (isLocked.value) {
+      MessageError(I18nT('host.CloudflareTunnel.licenseTips'))
+      return
+    }
     AsyncComponentShow(AddVM).then()
   }
 
@@ -30,17 +39,40 @@ export const Setup = () => {
 
   function edit(item: CloudflareTunnel) {
     AsyncComponentShow(EditVM, {
-      item
+      item: JSON.parse(JSON.stringify(item))
     }).then()
   }
 
-  function info(item: CloudflareTunnel) {}
+  let LogVM: any
+  import('./Logs.vue').then((res) => {
+    LogVM = res.default
+  })
 
-  function del(item: CloudflareTunnel, index: number) {}
+  function log(item: CloudflareTunnel) {
+    AsyncComponentShow(LogVM, {
+      item: JSON.parse(JSON.stringify(item))
+    }).then()
+  }
 
-  const openOutUrl = (item: CloudflareTunnel) => {}
+  function del(item: CloudflareTunnel, index: number) {
+    Base._Confirm(I18nT('base.areYouSure'), undefined, {
+      customClass: 'confirm-del',
+      type: 'warning'
+    }).then(() => {
+      CloudflareTunnelStore.items.splice(index, 1)
+      CloudflareTunnelStore.save()
+    })
+  }
 
-  const openLocalUrl = (item: CloudflareTunnel) => {}
+  const openOutUrl = (item: CloudflareTunnelDnsRecord) => {
+    const url = `http://${item.subdomain}.${item.zoneName}`
+    shell.openExternal(url).catch()
+  }
+
+  const openLocalUrl = (item: CloudflareTunnelDnsRecord) => {
+    const url = `${item?.protocol || 'http'}://${item.localService}`
+    shell.openExternal(url).catch()
+  }
 
   const groupTrunOn = (item: CloudflareTunnel) => {
     const dict = JSON.parse(JSON.stringify(appStore.phpGroupStart))
@@ -55,14 +87,75 @@ export const Setup = () => {
     appStore.saveConfig().then().catch()
   }
 
+  const copy = (str: string) => {
+    clipboard.writeText(str).then(() => {
+      MessageSuccess(I18nT('base.copySuccess'))
+    })
+  }
+
+  let EditDNSVM: any
+  import('./editDNS.vue').then((res) => {
+    EditDNSVM = res.default
+  })
+
+  const editDNS = (item: CloudflareTunnel, dns: CloudflareTunnelDnsRecord, index: number) => {
+    AsyncComponentShow(EditDNSVM, {
+      item: JSON.parse(JSON.stringify(item)),
+      dns: JSON.parse(JSON.stringify(dns)),
+      index
+    }).then()
+  }
+
+  const delDNS = (item: CloudflareTunnel, dns: CloudflareTunnelDnsRecord, index: number) => {
+    Base._Confirm(I18nT('base.areYouSure'), undefined, {
+      customClass: 'confirm-del',
+      type: 'warning'
+    }).then(() => {
+      const find = CloudflareTunnelStore.items.find((i) => i.id === item.id)
+      if (find) {
+        find.dns.splice(index, 1)
+      }
+      CloudflareTunnelStore.save()
+    })
+  }
+
+  let AddDNSVM: any
+  import('./addDNS.vue').then((res) => {
+    AddDNSVM = res.default
+  })
+
+  function addDNS(item: CloudflareTunnel) {
+    if (isLocked.value && item.dns.length > 0) {
+      MessageError(I18nT('host.CloudflareTunnel.licenseTips'))
+      return
+    }
+    AsyncComponentShow(AddDNSVM, {
+      item: JSON.parse(JSON.stringify(item))
+    }).then()
+  }
+
+  const setupStore = SetupStore()
+  const isLocked = computed(() => {
+    if (setupStore.isActive) {
+      return false
+    }
+
+    return CloudflareTunnelStore.items.length > 0
+  })
+
   return {
     add,
     edit,
-    info,
     del,
     list,
     openOutUrl,
     openLocalUrl,
-    groupTrunOn
+    groupTrunOn,
+    copy,
+    editDNS,
+    delDNS,
+    addDNS,
+    log,
+    isLocked
   }
 }

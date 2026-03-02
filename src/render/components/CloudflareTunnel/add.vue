@@ -4,6 +4,8 @@
     :title="'Cloudflare Tunnel' + ' ' + I18nT('base.add')"
     class="el-dialog-content-flex-1 h-[75%] dark:bg-[#1d2033]"
     width="600px"
+    :close-on-click-modal="false"
+    :close-on-press-escape="false"
     @closed="closedFn"
   >
     <el-scrollbar class="px-2">
@@ -51,10 +53,14 @@
     </el-scrollbar>
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click.stop="onCancel">{{ I18nT('base.cancel') }}</el-button>
-        <el-button :disabled="!saveEnable" type="primary" @click.stop="doSubmit">{{
-          I18nT('base.confirm')
-        }}</el-button>
+        <el-button :disabled="loading" @click.stop="onCancel">{{ I18nT('base.cancel') }}</el-button>
+        <el-button
+          :loading="loading"
+          :disabled="!saveEnable || loading"
+          type="primary"
+          @click.stop="doSubmit"
+          >{{ I18nT('base.confirm') }}</el-button
+        >
       </div>
     </template>
   </el-dialog>
@@ -73,12 +79,15 @@
   import { reactiveBind, uuid } from '@/util/Index'
   import CloudflareTunnelStore from '@/core/CloudflareTunnel/CloudflareTunnelStore'
   import { BrewStore } from '@/store/brew'
+  import { MessageError } from '@/util/Element'
 
   const brewStore = BrewStore()
 
   const { show, onClosed, onSubmit, closedFn } = AsyncComponentSetup()
 
   const formRef = ref()
+
+  const loading = ref(false)
 
   const zones = ref<ZoneType[]>([])
 
@@ -189,7 +198,11 @@
       return ''
     }
     const domain = `${form.value.subdomain}.${form.value.zoneName}`
-    const all = CloudflareTunnelStore.items.map((item) => `${item.subdomain}.${item.zoneName}`)
+    const all = CloudflareTunnelStore.items
+      .map((item) => {
+        return item.dns.map((d) => `${d.subdomain}.${d.zoneName}`)
+      })
+      .flat()
     if (all.includes(domain)) {
       return I18nT('host.CloudflareTunnel.OnlineDomainExistsTips')
     }
@@ -201,11 +214,39 @@
   }
 
   const doSubmit = async () => {
-    const item = reactiveBind(new CloudflareTunnel(form.value))
+    if (loading.value) {
+      return
+    }
+    loading.value = true
+    const obj: any = {
+      apiToken: form.value.apiToken,
+      cloudflaredBin: form.value.cloudflaredBin,
+      accountId: form.value.accountId,
+
+      dns: [
+        {
+          id: uuid(),
+          subdomain: form.value.subdomain,
+          localService: form.value.localService,
+          zoneId: form.value.zoneId,
+          zoneName: form.value.zoneName
+        }
+      ]
+    }
+    const item = reactiveBind(new CloudflareTunnel(obj))
     item.id = uuid()
-    CloudflareTunnelStore.items.unshift(item)
-    CloudflareTunnelStore.save()
-    onCancel()
+    item
+      .fetchTunnel()
+      .then(() => {
+        CloudflareTunnelStore.items.unshift(item)
+        CloudflareTunnelStore.save()
+        loading.value = false
+        onCancel()
+      })
+      .catch((error) => {
+        MessageError(I18nT('host.CloudflareTunnel.TunnelInitFailTips', { error }))
+        loading.value = false
+      })
   }
 
   defineExpose({
