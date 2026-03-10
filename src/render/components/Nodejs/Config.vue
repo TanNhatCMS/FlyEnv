@@ -19,7 +19,8 @@
   import Conf from '@/components/Conf/index.vue'
   import Common from '@/components/Conf/common.vue'
   import type { CommonSetItem } from '@/components/Conf/setup'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { debounce } from 'lodash-es'
   import { uuid } from '@/util/Index'
   import { join } from '@/util/path-browserify'
@@ -67,7 +68,7 @@
       enable: true,
       options: baseOptions,
       tips() {
-        return I18nT('nodejs.registry')
+        return t('nodejs.registry')
       },
       onChange(nv: any, ov: any) {
         if (watcher) {
@@ -230,7 +231,7 @@
     if (watcher) {
       watcher()
     }
-    let config = editConfig.replace(/\r\n/gm, '\n')
+    const config = editConfig.replace(/\r\n/gm, '\n')
     const arr = [...names].map((item) => {
       const regex = new RegExp(`^(?!\\s*#)\\s*${item.name}\\s*=(.*?)([^\\n])(\\n|$)`, 'gmu')
       const matchs =

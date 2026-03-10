@@ -12,10 +12,10 @@
           <template #header>
             <div class="flex items-center justify-between gap-7 overflow-hidden">
               <template v-if="PodmanManager.installing">
-                <span class="truncate">{{ I18nT('podman.installPodmanByHomebrew') }}</span>
+                <span class="truncate">{{ t('podman.installPodmanByHomebrew') }}</span>
               </template>
               <template v-else>
-                <span>{{ I18nT('podman.podmanInstall') }}</span>
+                <span>{{ t('podman.podmanInstall') }}</span>
               </template>
 
               <el-button
@@ -40,10 +40,10 @@
             </template>
             <template v-else>
               <div class="p-5 flex flex-col gap-7 items-start">
-                <pre class="app-html-block" v-html="I18nT('podman.noPodmanFound')"></pre>
+                <pre class="app-html-block" v-html="t('podman.noPodmanFound')"></pre>
                 <template v-if="checkBrew">
                   <el-button type="primary" @click.stop="installByHomebrew">{{
-                    I18nT('podman.installPodmanByHomebrew')
+                    t('podman.installPodmanByHomebrew')
                   }}</el-button>
                 </template>
               </div>
@@ -52,11 +52,11 @@
           <template v-if="PodmanManager.installing" #footer>
             <template v-if="PodmanManager.installEnd">
               <el-button type="primary" @click.stop="taskConfirm">{{
-                I18nT('base.confirm')
+                taskConfirm('base.confirm')
               }}</el-button>
             </template>
             <template v-else>
-              <el-button @click.stop="taskCancel">{{ I18nT('base.cancel') }}</el-button>
+              <el-button @click.stop="taskCancel">{{ t('base.cancel') }}</el-button>
             </template>
           </template>
         </el-card>
@@ -74,7 +74,8 @@
 <script lang="ts" setup>
   import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
   import { PodmanManager } from './class/Podman'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { AppStore } from '@/store/app'
   import { join } from '@/util/path-browserify'
   import { fs } from '@/util/NodeFn'

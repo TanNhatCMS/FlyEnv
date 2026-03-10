@@ -21,7 +21,7 @@
       ></Manager>
       <ProjectIndex
         v-else-if="tab === 2"
-        :title="`Erlang ${I18nT('base.projects')}`"
+        :title="I18nT('host.projectErlang')"
         :type-flag="'erlang'"
       >
       </ProjectIndex>

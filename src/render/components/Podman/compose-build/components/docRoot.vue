@@ -1,5 +1,5 @@
 <template>
-  <el-form-item :label="I18nT('host.runDirectory')" prop="docRoot">
+  <el-form-item :label="t('host.runDirectory')" prop="docRoot">
     <el-select v-model="form.docRoot">
       <el-option label="/" :value="'/'"></el-option>
       <template v-for="(d, _d) in subdirs" :key="_d">
@@ -14,7 +14,8 @@
   import { ComposeBuildForm } from '@/components/Podman/compose-build/Form'
   import { fs } from '@/util/NodeFn'
   import { asyncComputed } from '@vueuse/core'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
 
   const props = defineProps<{
     formName: any

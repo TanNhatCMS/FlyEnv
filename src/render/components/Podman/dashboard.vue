@@ -9,52 +9,50 @@
         :column="2"
         direction="vertical"
       >
-        <el-descriptions-item
-          class-name="w-[50%] overflow-hidden"
-          :label="I18nT('podman.Machine')"
-          >{{ info.Name }}</el-descriptions-item
-        >
-        <el-descriptions-item class-name="w-[50%] overflow-hidden" :label="I18nT('podman.State')">{{
-          info.State
-        }}</el-descriptions-item>
-        <el-descriptions-item :label="I18nT('podman.CPU')">{{
-          info.Resources?.CPUs
-        }}</el-descriptions-item>
-        <el-descriptions-item :label="I18nT('podman.Memory')"
-          >{{ info.Resources?.Memory }} MB</el-descriptions-item
-        >
-        <el-descriptions-item :label="I18nT('podman.DiskSize')"
-          >{{ info.Resources?.DiskSize }} MB</el-descriptions-item
-        >
-        <el-descriptions-item :label="I18nT('podman.rootful')">{{
-          info.Rootful ? I18nT('podman.yes') : I18nT('podman.no')
-        }}</el-descriptions-item>
-        <el-descriptions-item :label="I18nT('podman.userModeNetworking')">
-          {{ info.UserModeNetworking ? I18nT('podman.yes') : I18nT('podman.no') }}
+        <el-descriptions-item class-name="w-[50%] overflow-hidden" :label="t('podman.Machine')">
+          {{ info.Name }}
         </el-descriptions-item>
-        <el-descriptions-item :label="I18nT('podman.rosetta')">{{
-          info.Rosetta ? I18nT('podman.yes') : I18nT('podman.no')
-        }}</el-descriptions-item>
-        <el-descriptions-item :label="I18nT('podman.Created')">{{
-          info.Created
-        }}</el-descriptions-item>
-        <el-descriptions-item :label="I18nT('podman.LastUp')">{{
-          info.LastUp
-        }}</el-descriptions-item>
-        <el-descriptions-item :label="I18nT('podman.identityPath')">
+        <el-descriptions-item class-name="w-[50%] overflow-hidden" :label="t('podman.State')">
+          {{ info.State }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('podman.CPU')">
+          {{ info.Resources?.CPUs }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('podman.Memory')">
+          {{ info.Resources?.Memory }} MB
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('podman.DiskSize')">
+          {{ info.Resources?.DiskSize }} MB
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('podman.rootful')">
+          {{ info.Rootful ? t('podman.yes') : t('podman.no') }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('podman.userModeNetworking')">
+          {{ info.UserModeNetworking ? t('podman.yes') : t('podman.no') }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('podman.rosetta')">
+          {{ info.Rosetta ? t('podman.yes') : t('podman.no') }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('podman.Created')"
+          >{{ info.Created }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('podman.LastUp')">
+          {{ info.LastUp }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('podman.identityPath')">
           {{ info.SSHConfig?.IdentityPath }}
         </el-descriptions-item>
-        <el-descriptions-item :label="I18nT('podman.remoteUsername')">
+        <el-descriptions-item :label="t('podman.remoteUsername')">
           {{ info.SSHConfig?.RemoteUsername }}
         </el-descriptions-item>
-        <el-descriptions-item :label="I18nT('podman.SSHPort')">
+        <el-descriptions-item :label="t('podman.SSHPort')">
           {{ info.SSHConfig?.Port }}
         </el-descriptions-item>
-        <el-descriptions-item :label="I18nT('podman.PodmanSocket')">
+        <el-descriptions-item :label="t('podman.PodmanSocket')">
           {{ info.ConnectionInfo?.PodmanSocket?.Path }}
         </el-descriptions-item>
       </el-descriptions>
-      <el-empty v-else :description="I18nT('podman.machineIsEmpty')" />
+      <el-empty v-else :description="t('podman.machineIsEmpty')" />
     </el-scrollbar>
   </div>
 </template>
@@ -63,7 +61,9 @@
   import { computed } from 'vue'
   import { PodmanManager } from '@/components/Podman/class/Podman'
   import type { MachineItemType } from '@/components/Podman/type'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
 
   const machine = computed(() => {
     return PodmanManager.machine.find((m) => m.name === PodmanManager.tab)
@@ -90,6 +90,7 @@
           > tbody {
             width: 100%;
             overflow: hidden;
+
             > tr {
               width: 100%;
               overflow: hidden;

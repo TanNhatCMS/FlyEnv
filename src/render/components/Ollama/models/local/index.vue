@@ -2,12 +2,12 @@
   <el-table height="100%" :data="tableData" :border="false" style="width: 100%">
     <template #empty>
       <template v-if="fetching">
-        {{ I18nT('base.gettingVersion') }}
+        {{ t('base.gettingVersion') }}
       </template>
     </template>
     <el-table-column prop="name">
       <template #header>
-        <span style="padding: 2px 12px 2px 24px; display: block">{{ I18nT('base.Library') }}</span>
+        <span style="padding: 2px 12px 2px 24px; display: block">{{ t('base.Library') }}</span>
       </template>
       <template #default="scope">
         <span
@@ -17,12 +17,14 @@
         >
       </template>
     </el-table-column>
-    <el-table-column prop="size" :label="I18nT('ollama.size')" width="150"> </el-table-column>
+    <el-table-column prop="size" :label="t('ollama.size')" width="150"></el-table-column>
   </el-table>
 </template>
 
 <script lang="ts" setup>
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import { Setup } from './setup'
 
   const { fetching, tableData } = Setup()

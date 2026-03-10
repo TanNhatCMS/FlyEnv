@@ -19,7 +19,8 @@
   import Conf from '@/components/Conf/index.vue'
   import Common from '@/components/Conf/common.vue'
   import type { CommonSetItem } from '@/components/Conf/setup'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { debounce } from 'lodash-es'
   import { uuid } from '@/util/Index'
   import { join } from '@/util/path-browserify'
@@ -45,7 +46,7 @@
       value: '60',
       enable: true,
       tips() {
-        return I18nT('apache.Timeout')
+        return t('apache.Timeout')
       }
     },
     {
@@ -63,7 +64,7 @@
         }
       ],
       tips() {
-        return I18nT('nginx.gzip')
+        return t('nginx.gzip')
       }
     },
     {
@@ -71,7 +72,7 @@
       value: '1k',
       enable: true,
       tips() {
-        return I18nT('nginx.gzip_min_length')
+        return t('nginx.gzip_min_length')
       }
     },
     {
@@ -79,7 +80,7 @@
       value: '2',
       enable: true,
       tips() {
-        return I18nT('nginx.gzip_comp_level')
+        return t('nginx.gzip_comp_level')
       }
     },
     {
@@ -87,7 +88,7 @@
       value: '50m',
       enable: true,
       tips() {
-        return I18nT('nginx.client_max_body_size')
+        return t('nginx.client_max_body_size')
       }
     },
     {
@@ -95,7 +96,7 @@
       value: '128',
       enable: true,
       tips() {
-        return I18nT('nginx.server_names_hash_bucket_size')
+        return t('nginx.server_names_hash_bucket_size')
       }
     },
     {
@@ -103,7 +104,7 @@
       value: '512',
       enable: true,
       tips() {
-        return I18nT('nginx.server_names_hash_max_size')
+        return t('nginx.server_names_hash_max_size')
       }
     },
     {
@@ -111,7 +112,7 @@
       value: '32k',
       enable: true,
       tips() {
-        return I18nT('nginx.client_header_buffer_size')
+        return t('nginx.client_header_buffer_size')
       }
     },
     {
@@ -119,7 +120,7 @@
       value: '32k',
       enable: true,
       tips() {
-        return I18nT('nginx.client_body_buffer_size')
+        return t('nginx.client_body_buffer_size')
       }
     }
   ]

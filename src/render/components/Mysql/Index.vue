@@ -46,7 +46,7 @@
         <template #action="{ row }">
           <li @click.stop="toManage(row)">
             <SetUp width="17" height="17" />
-            <span class="ml-3">{{ I18nT('mysql.manage') }}</span>
+            <span class="ml-3">{{ t('mysql.manage') }}</span>
           </li>
         </template>
       </Service>
@@ -73,7 +73,9 @@
   import Group from './Group/Index.vue'
   import { MysqlStore } from './mysql'
   import { AppModuleSetup } from '@/core/Module'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import { SetUp } from '@element-plus/icons-vue'
   import type { ModuleInstalledItem } from '@/core/Module/ModuleInstalledItem'
   import { AsyncComponentShow } from '@/util/AsyncComponent'
@@ -84,12 +86,12 @@
   const mysqlStore = MysqlStore()
   const { tab, checkVersion } = AppModuleSetup('mysql')
   const tabs = [
-    I18nT('base.service'),
-    I18nT('base.versionManager'),
-    I18nT('base.configFile'),
-    I18nT('base.log'),
-    I18nT('base.slowLog'),
-    I18nT('base.group')
+    t('base.service'),
+    t('base.versionManager'),
+    t('base.configFile'),
+    t('base.log'),
+    t('base.slowLog'),
+    t('base.group')
   ]
   const groupRun = computed(() => {
     return mysqlStore.all.some((a) => a.version.running)

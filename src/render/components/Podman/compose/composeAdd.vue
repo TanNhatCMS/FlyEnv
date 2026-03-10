@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="show"
-    :title="I18nT('base.add') + ' Compose'"
+    :title="t('base.add') + ' Compose'"
     width="600px"
     :destroy-on-close="true"
     class="dark:bg-[#1d2033]"
@@ -15,13 +15,13 @@
       label-position="top"
       class="pt-2"
     >
-      <el-form-item :label="I18nT('base.name')" prop="name" required>
+      <el-form-item :label="t('base.name')" prop="name" required>
         <el-input v-model="form.name" />
       </el-form-item>
       <el-form-item prop="paths" required>
         <template #label>
           <div class="inline-flex items-center gap-3">
-            <span>{{ I18nT('podman.ComposeFile') }}</span>
+            <span>{{ t('podman.ComposeFile') }}</span>
             <el-button link type="primary" :icon="Plus" @click.stop="addFile"></el-button>
           </div>
         </template>
@@ -41,7 +41,7 @@
               <el-input
                 v-model="element.path"
                 class="flex-1"
-                :placeholder="I18nT('podman.PleaseSelectYmlFile')"
+                :placeholder="t('podman.PleaseSelectYmlFile')"
               >
                 <template #append>
                   <el-button :icon="FolderOpened" @click="selectFile(index)"></el-button>
@@ -62,17 +62,17 @@
           </template>
         </draggable>
       </el-form-item>
-      <el-form-item :label="I18nT('host.projectName')" prop="flag">
+      <el-form-item :label="t('host.projectName')" prop="flag">
         <el-input v-model="form.flag" placeholder="docker-compose -p xxxx" />
       </el-form-item>
-      <el-form-item :label="I18nT('host.comment')" prop="comment">
+      <el-form-item :label="t('host.comment')" prop="comment">
         <el-input v-model="form.comment" type="textarea" :rows="4" />
       </el-form-item>
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click.stop="onCancel">{{ I18nT('base.cancel') }}</el-button>
-        <el-button type="primary" @click.stop="doSubmit">{{ I18nT('base.confirm') }}</el-button>
+        <el-button @click.stop="onCancel">{{ t('base.cancel') }}</el-button>
+        <el-button type="primary" @click.stop="doSubmit">{{ t('base.confirm') }}</el-button>
       </div>
     </template>
   </el-dialog>
@@ -80,7 +80,8 @@
 
 <script lang="ts" setup>
   import { ref } from 'vue'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
   import { PodmanManager } from '@/components/Podman/class/Podman'
   import { FolderOpened, Plus, Delete } from '@element-plus/icons-vue'
@@ -126,15 +127,13 @@
 
   // 定义表单验证规则
   const rules = ref<FormRules>({
-    name: [
-      { required: true, message: I18nT('base.name') + I18nT('podman.require'), trigger: 'blur' }
-    ],
+    name: [{ required: true, message: t('base.name') + t('podman.require'), trigger: 'blur' }],
     flag: [
       {
         validator: (rule: any, value: string, callback: any) => {
           const regex = /^[a-z0-9][a-z0-9_-]*$/
           if (!regex.test(value)) {
-            callback(new Error(I18nT('podman.ComposeNameErrorTips')))
+            callback(new Error(t('podman.ComposeNameErrorTips')))
             return
           }
           callback()
@@ -147,7 +146,7 @@
         validator: (rule: any, value: Array<{ path: string }>, callback: any) => {
           const isEmptyPath = value.every((item) => !item.path.trim())
           if (isEmptyPath) {
-            callback(new Error(I18nT('podman.ComposeFileRequire')))
+            callback(new Error(t('podman.ComposeFileRequire')))
             return
           }
           callback()
@@ -190,7 +189,7 @@
 
   const doSubmit = async () => {
     if (!form.value.name) {
-      ElMessage.error(I18nT('base.name') + I18nT('podman.require'))
+      ElMessage.error(t('base.name') + t('podman.require'))
       return
     }
 
@@ -203,7 +202,7 @@
 
     const paths = form.value.paths.map((p) => p.path).filter((p) => !!p.trim())
     if (!paths.length) {
-      ElMessage.error(I18nT('podman.ComposeFileRequire'))
+      ElMessage.error(t('podman.ComposeFileRequire'))
       return
     }
 
@@ -227,7 +226,7 @@
         PodmanManager.saveComposeList().catch()
       }
     }
-    ElMessage.success(I18nT('base.success'))
+    ElMessage.success(t('base.success'))
     show.value = false
   }
 

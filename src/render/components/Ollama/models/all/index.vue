@@ -17,21 +17,21 @@
     >
       <template #empty>
         <template v-if="fetching">
-          {{ I18nT('base.gettingVersion') }}
+          {{ t('base.gettingVersion') }}
         </template>
         <template v-else>
-          {{ I18nT('util.noVerionsFoundInLib') }}
+          {{ t('util.noVerionsFoundInLib') }}
         </template>
       </template>
       <el-table-column prop="name">
         <template #header>
           <div class="w-full name-cell">
             <span style="display: inline-flex; align-items: center; padding: 2px 0">{{
-              I18nT('base.Library')
+              t('base.Library')
             }}</span>
             <el-input
               v-model.trim="OllamaAllModelsSetup.search"
-              :placeholder="I18nT('base.placeholderSearch')"
+              :placeholder="t('base.placeholderSearch')"
               clearable
             ></el-input>
           </div>
@@ -47,8 +47,8 @@
           </el-tooltip>
         </template>
       </el-table-column>
-      <el-table-column prop="size" :label="I18nT('ollama.size')" width="150"> </el-table-column>
-      <el-table-column align="center" :label="I18nT('base.isInstalled')" width="120">
+      <el-table-column prop="size" :label="t('ollama.size')" width="150"></el-table-column>
+      <el-table-column align="center" :label="t('base.isInstalled')" width="120">
         <template #default="scope">
           <div class="cell-status">
             <yb-icon
@@ -59,7 +59,7 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column align="center" :label="I18nT('base.action')" width="120">
+      <el-table-column align="center" :label="t('base.action')" width="120">
         <template #default="scope">
           <template v-if="!scope.row.isRoot">
             <template v-if="isInstalled(scope.row)">
@@ -88,7 +88,9 @@
 </template>
 
 <script lang="ts" setup>
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import { OllamaAllModelsSetup, Setup } from './setup'
   import type { TreeNode } from 'element-plus'
   import { OllamaLocalModelsSetup } from '@/components/Ollama/models/local/setup'

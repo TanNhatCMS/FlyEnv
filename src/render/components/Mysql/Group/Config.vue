@@ -10,7 +10,7 @@
       <div class="nav pl-3 pr-5">
         <div class="left" @click="show = false">
           <yb-icon :svg="import('@/svg/delete.svg?raw')" class="top-back-icon" />
-          <span class="ml-3">{{ I18nT('base.configFile') }}</span>
+          <span class="ml-3">{{ t('base.configFile') }}</span>
         </div>
       </div>
 
@@ -33,7 +33,9 @@
 
 <script lang="ts" setup>
   import { computed, reactive, Ref, ref, watch } from 'vue'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import type { MysqlGroupItem } from '@shared/app'
   import { AsyncComponentSetup } from '@/util/AsyncComponent'
   import Conf from '@/components/Conf/drawer.vue'
@@ -89,7 +91,7 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
       value: '3306',
       enable: true,
       tips() {
-        return I18nT('mysql.port')
+        return t('mysql.port')
       }
     },
     {
@@ -98,7 +100,7 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
       value: '64M',
       enable: true,
       tips() {
-        return I18nT('mysql.key_buffer_size')
+        return t('mysql.key_buffer_size')
       }
     },
     {
@@ -108,7 +110,7 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
       enable: true,
       show: vm?.value?.startsWith('5.'),
       tips() {
-        return I18nT('mysql.query_cache_size')
+        return t('mysql.query_cache_size')
       }
     },
     {
@@ -117,7 +119,7 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
       value: '64M',
       enable: true,
       tips() {
-        return I18nT('mysql.tmp_table_size')
+        return t('mysql.tmp_table_size')
       }
     },
     {
@@ -126,7 +128,7 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
       value: '256M',
       enable: true,
       tips() {
-        return I18nT('mysql.innodb_buffer_pool_size')
+        return t('mysql.innodb_buffer_pool_size')
       }
     },
     {
@@ -135,7 +137,7 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
       value: '32M',
       enable: true,
       tips() {
-        return I18nT('mysql.innodb_log_buffer_size')
+        return t('mysql.innodb_log_buffer_size')
       }
     },
     {
@@ -144,7 +146,7 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
       value: '1M',
       enable: true,
       tips() {
-        return I18nT('mysql.sort_buffer_size')
+        return t('mysql.sort_buffer_size')
       }
     },
     {
@@ -153,7 +155,7 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
       value: '1M',
       enable: true,
       tips() {
-        return I18nT('mysql.read_buffer_size')
+        return t('mysql.read_buffer_size')
       }
     },
     {
@@ -162,7 +164,7 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
       value: '256K',
       enable: true,
       tips() {
-        return I18nT('mysql.read_rnd_buffer_size')
+        return t('mysql.read_rnd_buffer_size')
       }
     },
     {
@@ -171,7 +173,7 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
       value: '32',
       enable: true,
       tips() {
-        return I18nT('mysql.thread_cache_size')
+        return t('mysql.thread_cache_size')
       }
     },
     {
@@ -180,7 +182,7 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
       value: '256',
       enable: true,
       tips() {
-        return I18nT('mysql.table_open_cache')
+        return t('mysql.table_open_cache')
       }
     },
     {
@@ -189,7 +191,7 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
       value: '500',
       enable: true,
       tips() {
-        return I18nT('mysql.max_connections')
+        return t('mysql.max_connections')
       }
     }
   ]

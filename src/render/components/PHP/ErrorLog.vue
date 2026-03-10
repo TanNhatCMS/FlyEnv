@@ -12,7 +12,7 @@
         <div class="left" @click="close">
           <yb-icon :svg="import('@/svg/delete.svg?raw')" class="top-back-icon" />
           <span class="ml-3 truncate"
-            >{{ I18nT('base.errorLog') }} - {{ version.version }} - {{ version.path }}</span
+            >{{ t('base.errorLog') }} - {{ version.version }} - {{ version.path }}</span
           >
         </div>
       </div>
@@ -25,7 +25,8 @@
 </template>
 <script lang="ts" setup>
   import { ref, computed } from 'vue'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { AsyncComponentSetup } from '@/util/AsyncComponent'
   import LogVM from '@/components/Log/index.vue'
   import ToolVM from '@/components/Log/tool.vue'

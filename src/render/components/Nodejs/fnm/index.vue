@@ -6,21 +6,19 @@
   </template>
   <template v-else-if="showInstall">
     <div class="p-5">
-      <pre class="app-html-block mb-6 text-xl" v-html="I18nT('nodejs.installFNM')"></pre>
+      <pre class="app-html-block mb-6 text-xl" v-html="t('nodejs.installFNM')"></pre>
       <el-form label-position="top" label-width="150px">
-        <el-form-item :label="I18nT('util.nodeToolInstallBy')">
+        <el-form-item :label="t('util.nodeToolInstallBy')">
           <el-radio-group v-model="FNMSetup.installLib">
-            <el-radio-button key="shell" label="shell">{{
-              I18nT('base.Official')
-            }}</el-radio-button>
+            <el-radio-button key="shell" label="shell">{{ t('base.Official') }} </el-radio-button>
             <el-radio-button key="brew" :disabled="!hasBrew" label="brew">Homebrew</el-radio-button>
             <el-radio-button key="port" :disabled="!hasPort" label="port">Macports</el-radio-button>
           </el-radio-group>
         </el-form-item>
         <el-form-item>
-          <el-button class="mt-3" type="primary" @click.stop="installFNM">{{
-            I18nT('base.install')
-          }}</el-button>
+          <el-button class="mt-3" type="primary" @click.stop="installFNM"
+            >{{ t('base.install') }}
+          </el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -43,7 +41,9 @@
 </template>
 
 <script lang="tsx" setup>
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import { FNMSetup, Setup } from '@/components/Nodejs/fnm/setup'
   import { ElInput, ElButton, ElTooltip } from 'element-plus'
   import type { Column } from 'element-plus'
@@ -63,7 +63,7 @@
 
   const copyCommand = (command: string) => {
     clipboard.writeText(command)
-    MessageSuccess(I18nT('base.copySuccess'))
+    MessageSuccess(t('base.copySuccess'))
   }
 
   const columns: Column<any>[] = [
@@ -78,11 +78,11 @@
         return (
           <div class="w-full name-cell">
             <span style="display: inline-flex; align-items: center; padding: 2px 0">
-              {I18nT('base.version')}
+              {t('base.version')}
             </span>
             <ElInput
               v-model={FNMSetup.search}
-              placeholder={I18nT('base.placeholderSearch')}
+              placeholder={t('base.placeholderSearch')}
               clearable={true}
             ></ElInput>
           </div>
@@ -115,7 +115,7 @@
     },
     {
       key: 'current',
-      title: I18nT('util.nodeListCellCurrent'),
+      title: t('util.nodeListCellCurrent'),
       dataKey: 'current',
       class: 'flex-1',
       headerClass: 'flex-1',
@@ -156,7 +156,7 @@
     },
     {
       key: 'installed',
-      title: I18nT('util.nodeListCellInstalled'),
+      title: t('util.nodeListCellInstalled'),
       dataKey: 'installed',
       class: 'flex-1',
       headerClass: 'flex-1',
@@ -180,7 +180,7 @@
     },
     {
       key: 'operation',
-      title: I18nT('base.action'),
+      title: t('base.action'),
       dataKey: 'operation',
       class: 'flex-shrink-0',
       headerClass: 'flex-shrink-0',
@@ -190,7 +190,7 @@
         if (row.installing) {
           return <ElButton loading={true} link></ElButton>
         } else {
-          const t = row.installed ? I18nT('base.uninstall') : I18nT('base.install')
+          const title = row.installed ? t('base.uninstall') : t('base.install')
           const a = row.installed ? 'uninstall' : 'install'
           return (
             <ElButton
@@ -200,7 +200,7 @@
               }}
               link
             >
-              {t}
+              {title}
             </ElButton>
           )
         }
@@ -208,4 +208,3 @@
     }
   ]
 </script>
-<script setup lang="ts"></script>

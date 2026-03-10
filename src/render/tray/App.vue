@@ -23,8 +23,8 @@
         </el-scrollbar>
       </ul>
       <ul class="bottom-tool">
-        <li @click="showMainWin"> {{ I18nT('tray.showMainWin') }} </li>
-        <li @click="doExit"> {{ I18nT('tray.exit') }} </li>
+        <li @click="showMainWin"> {{ t('tray.showMainWin') }} </li>
+        <li @click="doExit"> {{ t('tray.exit') }} </li>
       </ul>
     </div>
     <span ref="arrow" class="popper-arrow" :style="{ left: left } as any"></span>
@@ -35,10 +35,11 @@
   import { computed, onMounted, ref, Ref } from 'vue'
   import { AppStore } from './store/app'
   import IPC from '../util/IPC'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
   import VueSvg from '@/components/VueSvgIcon/svg.vue'
   import CustomerItem from './CustomerItem.vue'
 
+  const { t } = useI18n()
   const store = AppStore()
   const groupIsRunning = computed(() => {
     return store.groupIsRunning

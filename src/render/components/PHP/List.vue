@@ -6,7 +6,7 @@
           <span> PHP </span>
           <el-popover :show-after="600" placement="top" width="auto">
             <template #default>
-              <span>{{ I18nT('base.customVersionDir') }}</span>
+              <span>{{ t('base.customVersionDir') }}</span>
             </template>
             <template #reference>
               <el-button
@@ -31,14 +31,14 @@
       <el-table-column prop="version" width="140px">
         <template #header>
           <span style="padding: 2px 12px 2px 24px; display: block">{{
-            I18nT('base.version')
+            t('base.version')
           }}</span>
         </template>
         <template #default="scope">
           <span style="padding: 2px 12px 2px 24px; display: block">{{ scope.row.version }}</span>
         </template>
       </el-table-column>
-      <el-table-column :label="I18nT('base.path')" :prop="null">
+      <el-table-column :label="t('base.path')" :prop="null">
         <template #default="scope">
           <template v-if="!scope.row.version">
             <el-popover
@@ -62,7 +62,7 @@
           </template>
         </template>
       </el-table-column>
-      <el-table-column :label="I18nT('php.quickStart')" :prop="null" width="100px" align="center">
+      <el-table-column :label="t('php.quickStart')" :prop="null" width="100px" align="center">
         <template #default="scope">
           <el-button
             link
@@ -77,10 +77,10 @@
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column :label="I18nT('service.env')" :prop="null" width="100px" align="center">
+      <el-table-column :label="t('service.env')" :prop="null" width="100px" align="center">
         <template #header>
-          <el-tooltip :content="I18nT('service.envTips')" placement="top" show-after="600">
-            <span>{{ I18nT('service.env') }}</span>
+          <el-tooltip :content="t('service.envTips')" placement="top" show-after="600">
+            <span>{{ t('service.env') }}</span>
           </el-tooltip>
         </template>
         <template #default="scope">
@@ -88,7 +88,7 @@
             <el-button style="width: auto; height: auto" text :loading="true"></el-button>
           </template>
           <template v-else-if="isInAppEnv(scope.row)">
-            <el-tooltip :content="I18nT('service.setByApp')" :show-after="600" placement="top">
+            <el-tooltip :content="t('service.setByApp')" :show-after="600" placement="top">
               <el-button
                 link
                 type="primary"
@@ -99,7 +99,7 @@
             </el-tooltip>
           </template>
           <template v-else-if="isInEnv(scope.row)">
-            <el-tooltip :content="I18nT('service.setByNoApp')" :show-after="600" placement="top">
+            <el-tooltip :content="t('service.setByNoApp')" :show-after="600" placement="top">
               <el-button
                 link
                 type="warning"
@@ -127,14 +127,14 @@
       </el-table-column>
       <el-table-column
         :show-overflow-tooltip="true"
-        :label="I18nT('service.alias')"
+        :label="t('service.alias')"
         :prop="null"
         width="120px"
         align="left"
       >
         <template #header>
-          <el-tooltip :content="I18nT('service.aliasTips')" placement="top" show-after="600">
-            <span>{{ I18nT('service.alias') }}</span>
+          <el-tooltip :content="t('service.aliasTips')" placement="top" show-after="600">
+            <span>{{ t('service.alias') }}</span>
           </el-tooltip>
         </template>
         <template #default="scope">
@@ -145,7 +145,7 @@
           >
         </template>
       </el-table-column>
-      <el-table-column :label="I18nT('base.service')" :prop="null" width="100px">
+      <el-table-column :label="t('base.service')" :prop="null" width="100px">
         <template #default="scope">
           <template v-if="scope.row.running">
             <el-button :loading="true" link></el-button>
@@ -176,24 +176,24 @@
           </template>
         </template>
       </el-table-column>
-      <el-table-column :label="I18nT('base.action')" :prop="null" width="100px" align="center">
+      <el-table-column :label="t('base.action')" :prop="null" width="100px" align="center">
         <template #default="scope">
           <EXT :item="scope.row" type="php">
             <li @click.stop="action(scope.row, scope.$index, 'open')">
               <yb-icon :svg="import('@/svg/folder.svg?raw')" width="17" height="17" />
-              <span class="ml-3">{{ I18nT('base.open') }}</span>
+              <span class="ml-3">{{ t('base.open') }}</span>
             </li>
             <li @click.stop="action(scope.row, scope.$index, 'conf')">
               <yb-icon :svg="import('@/svg/config.svg?raw')" width="17" height="17" />
-              <span class="ml-3">{{ I18nT('php.editPhpIni') }}</span>
+              <span class="ml-3">{{ t('php.editPhpIni') }}</span>
             </li>
             <li @click.stop="action(scope.row, scope.$index, 'disable_functions')">
               <yb-icon :svg="import('@/svg/config.svg?raw')" width="17" height="17" />
-              <span class="ml-3">{{ I18nT('php.disableFunction.title') }}</span>
+              <span class="ml-3">{{ t('php.disableFunction.title') }}</span>
             </li>
             <li @click.stop="action(scope.row, scope.$index, 'log-error')">
               <yb-icon :svg="import('@/svg/log.svg?raw')" width="17" height="17" />
-              <span class="ml-3">{{ I18nT('base.errorLog') }}</span>
+              <span class="ml-3">{{ t('base.errorLog') }}</span>
             </li>
             <template v-if="!isWindows">
               <li @click.stop="action(scope.row, scope.$index, 'fpm-conf')">
@@ -202,16 +202,16 @@
               </li>
               <li @click.stop="action(scope.row, scope.$index, 'log-fpm')">
                 <yb-icon :svg="import('@/svg/log.svg?raw')" width="17" height="17" />
-                <span class="ml-3">{{ I18nT('php.fpmLog') }}</span>
+                <span class="ml-3">{{ t('php.fpmLog') }}</span>
               </li>
               <li @click.stop="action(scope.row, scope.$index, 'log-slow')">
                 <yb-icon :svg="import('@/svg/log.svg?raw')" width="17" height="17" />
-                <span class="ml-3">{{ I18nT('base.slowLog') }}</span>
+                <span class="ml-3">{{ t('base.slowLog') }}</span>
               </li>
             </template>
             <li @click.stop="action(scope.row, scope.$index, 'extend')">
               <yb-icon :svg="import('@/svg/extend.svg?raw')" width="17" height="17" />
-              <span class="ml-3">{{ I18nT('php.extensions') }}</span>
+              <span class="ml-3">{{ t('php.extensions') }}</span>
             </li>
           </EXT>
         </template>
@@ -223,7 +223,8 @@
 <script lang="ts" setup>
   import { computed } from 'vue'
   import type { SoftInstalled } from '@/store/brew'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { AsyncComponentShow } from '@/util/AsyncComponent'
   import { FolderAdd } from '@element-plus/icons-vue'
   import EXT from '@/components/ServiceManager/EXT/index.vue'

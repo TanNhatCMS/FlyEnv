@@ -29,10 +29,10 @@
     </template>
     <template v-if="showFooter" #footer>
       <template v-if="taskEnd">
-        <el-button type="primary" @click.stop="taskConfirm">{{ I18nT('base.confirm') }}</el-button>
+        <el-button type="primary" @click.stop="taskConfirm">{{ t('base.confirm') }}</el-button>
       </template>
       <template v-else>
-        <el-button @click.stop="taskCancel">{{ I18nT('base.cancel') }}</el-button>
+        <el-button @click.stop="taskCancel">{{ t('base.cancel') }}</el-button>
       </template>
     </template>
   </el-card>
@@ -40,7 +40,9 @@
 
 <script lang="ts" setup>
   import { NodejsStore } from '@/components/Nodejs/node'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   import { Setup } from '@/components/Nodejs/setup'
   import FnmVM from './fnm/index.vue'
   import NVMVM from './nvm/index.vue'

@@ -1,5 +1,5 @@
 <template>
-  <el-form-item :label="I18nT('host.placeholderRootPath')" prop="wwwRoot" :show-message="false">
+  <el-form-item :label="t('host.placeholderRootPath')" prop="wwwRoot" :show-message="false">
     <el-input v-model="form.wwwRoot">
       <template #append>
         <el-button :icon="Folder" @click="selectDirectory"></el-button>
@@ -12,7 +12,8 @@
   import { computed } from 'vue'
   import { ComposeBuildForm } from '@/components/Podman/compose-build/Form'
   import { Folder } from '@element-plus/icons-vue'
-  import { I18nT } from '@lang/index'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   import { ComposeBuildSetup } from '@/components/Podman/compose-build/setup'
 
   const props = defineProps<{
