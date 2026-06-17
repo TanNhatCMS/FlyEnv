@@ -5,7 +5,6 @@ import type { OnlineVersionItem, SoftInstalled } from '@shared/app'
 import {
   AppLog,
   brewInfoJson,
-  serviceStartExec,
   versionBinVersion,
   versionFilterSame,
   versionFixed,
@@ -13,11 +12,11 @@ import {
   versionSort,
   writeFile,
   mkdirp,
-  serviceStartExecWin,
   remove,
   zipUnpack,
   moveChildDirToParent
 } from '../../Fn'
+import { serviceStartSpawn } from '../../util/ServiceStart'
 import { ForkPromise } from '@shared/ForkPromise'
 import { I18nT } from '@lang/index'
 import TaskQueue from '../../TaskQueue'
@@ -76,46 +75,21 @@ log-outputs: ["stdout"]`
       const baseDir = join(global.Server.BaseDir!, 'etcd')
       await mkdirp(baseDir)
 
-      const execEnv = ``
-
-      if (isWindows()) {
-        const execArgs = `--config-file \`"${iniFile}\`"`
-        try {
-          const res = await serviceStartExecWin({
-            version,
-            pidPath: this.pidPath,
-            baseDir,
-            bin,
-            execArgs,
-            execEnv,
-            on,
-            checkPidFile: false
-          })
-          resolve(res)
-        } catch (e: any) {
-          console.log('-k start err: ', e)
-          reject(e)
-          return
-        }
-      } else {
-        const execArgs = `--config-file "${iniFile}"`
-        try {
-          const res = await serviceStartExec({
-            version,
-            pidPath: this.pidPath,
-            baseDir,
-            bin,
-            execArgs,
-            execEnv,
-            on,
-            checkPidFile: false
-          })
-          resolve(res)
-        } catch (e: any) {
-          console.log('-k start err: ', e)
-          reject(e)
-          return
-        }
+      const execArgs = ['--config-file', iniFile]
+      try {
+        const res = await serviceStartSpawn({
+          version,
+          pidPath: this.pidPath,
+          baseDir,
+          bin,
+          execArgs,
+          on
+        })
+        resolve(res)
+      } catch (e: any) {
+        console.log('-k start err: ', e)
+        reject(e)
+        return
       }
     })
   }

@@ -6,7 +6,6 @@ import {
   AppLog,
   brewInfoJson,
   portSearch,
-  serviceStartExec,
   versionBinVersion,
   versionFilterSame,
   versionFixed,
@@ -14,14 +13,14 @@ import {
   versionSort,
   writeFile,
   mkdirp,
-  serviceStartExecCMD,
   versionBinVersionSync,
   chmod
 } from '../../Fn'
+import { serviceStartSpawn } from '../../util/ServiceStart'
 import { ForkPromise } from '@shared/ForkPromise'
 import { I18nT } from '@lang/index'
 import TaskQueue from '../../TaskQueue'
-import { isLinux, isWindows } from '@shared/utils'
+import { isWindows } from '@shared/utils'
 import { getPrimaryLocalIPAddress } from '@shared/network'
 
 class Consul extends Base {
@@ -47,16 +46,20 @@ class Consul extends Base {
         on({
           'APP-On-Log': AppLog('info', I18nT('appLog.confInit'))
         })
-        const content = JSON.stringify(
-          {
-            server: true,
-            bootstrap: true,
-            client_addr: '127.0.0.1',
-            ui: true
-          },
-          null,
-          2
-        )
+        const json: any = {
+          server: true,
+          bootstrap_expect: 1,
+          client_addr: '127.0.0.1',
+          ui_config: {
+            enabled: true
+          }
+        }
+        if (isWindows()) {
+          // Consul's default Raft WAL backend fsyncs the `raft/wal` directory on start,
+          // which Windows rejects with "Access is denied". Use the BoltDB backend instead.
+          json.raft_logstore = { backend: 'boltdb' }
+        }
+        const content = JSON.stringify(json, null, 2)
         await writeFile(iniFile, content)
         const defaultIniFile = join(baseDir, `consul-${versionTop}.default`)
         await writeFile(defaultIniFile, content)
@@ -90,44 +93,30 @@ class Consul extends Base {
       const dbPath = DATA_DIR ?? join(baseDir, `consul-${versionTop}-data`)
       const logPath = join(baseDir, `consul.log`)
       const ip = getPrimaryLocalIPAddress()
-      if (isWindows()) {
-        const execArgs = `agent -config-file="${iniFile}" -data-dir="${dbPath}" -log-file="${logPath}" -bind="${ip}" -pid-file="${this.pidPath}"`
-        try {
-          const res = await serviceStartExecCMD({
-            version,
-            pidPath: this.pidPath,
-            baseDir,
-            bin,
-            execArgs,
-            execEnv: '',
-            on
-          })
-          resolve(res)
-        } catch (e: any) {
-          console.log('-k start err: ', e)
-          reject(e)
-          return
-        }
-      } else {
-        const execEnv = ``
-        const execArgs = `agent -config-file="${iniFile}" -data-dir="${dbPath}" -log-file="${logPath}" -bind="${ip}" -pid-file="${this.pidPath}"`
-        try {
-          const res = await serviceStartExec({
-            root: isLinux(),
-            version,
-            pidPath: this.pidPath,
-            baseDir,
-            bin,
-            execArgs,
-            execEnv,
-            on
-          })
-          resolve(res)
-        } catch (e: any) {
-          console.log('-k start err: ', e)
-          reject(e)
-          return
-        }
+      // Consul binds only non-privileged ports (8500/8600/8300...), so no root is
+      // needed on any platform — single detached-spawn path, no script landed.
+      const execArgs = [
+        'agent',
+        `-config-file=${iniFile}`,
+        `-data-dir=${dbPath}`,
+        `-log-file=${logPath}`,
+        `-bind=${ip}`,
+        `-pid-file=${this.pidPath}`
+      ]
+      try {
+        const res = await serviceStartSpawn({
+          version,
+          pidPath: this.pidPath,
+          baseDir,
+          bin,
+          execArgs,
+          on
+        })
+        resolve(res)
+      } catch (e: any) {
+        console.log('-k start err: ', e)
+        reject(e)
+        return
       }
     })
   }

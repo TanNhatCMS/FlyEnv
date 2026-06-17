@@ -18,17 +18,16 @@ import {
   portSearch,
   versionFilterSame,
   AppLog,
-  serviceStartExec,
   writeFile,
   mkdirp,
   chmod,
   remove,
-  serviceStartExecCMD,
   zipUnpack,
   moveChildDirToParent,
   readFile,
   md5
 } from '../../Fn'
+import { serviceStartSpawn } from '../../util/ServiceStart'
 import { ForkPromise } from '@shared/ForkPromise'
 import TaskQueue from '../../TaskQueue'
 import Helper from '../../Helper'
@@ -212,7 +211,9 @@ const supportsMariaDBServerOption = async (version: SoftInstalled, option: strin
 }
 
 const quoteMariaDBArgPath = (file: string) => {
-  return `"${pathFixedToUnix(file)}"`
+  // Args are passed to spawn() as an array (no shell), so the path must NOT be quoted —
+  // quotes would become part of the literal path. Just normalize separators.
+  return pathFixedToUnix(file)
 }
 
 const createSerialNumber = () => {
@@ -565,11 +566,11 @@ datadir=${dataDir}`
 
           if (isWindows()) {
             const params = [
-              `--defaults-file="${m}"`,
-              `--pid-file="${p}"`,
+              `--defaults-file=${m}`,
+              `--pid-file=${p}`,
               '--slow-query-log=ON',
-              `--slow-query-log-file="${s}"`,
-              `--log-error="${e}"`,
+              `--slow-query-log-file=${s}`,
+              `--log-error=${e}`,
               '--standalone'
             ]
             params.push(
@@ -577,27 +578,22 @@ datadir=${dataDir}`
             )
 
             if (skipGrantTables) {
-              params.push(`--datadir="${ddir}"`)
-              params.push('--bind-address="127.0.0.1"')
+              params.push(`--datadir=${ddir}`)
+              params.push('--bind-address=127.0.0.1')
               params.push(`--port=${port}`)
               params.push(`--enable-named-pipe`)
               params.push('--skip-grant-tables')
             }
 
-            const execEnv = ``
-            const execArgs = params.join(' ')
-
             try {
-              const res = await serviceStartExecCMD({
+              const res = await serviceStartSpawn({
                 version,
                 pidPath: p,
                 baseDir,
                 bin,
-                execArgs,
-                execEnv,
+                execArgs: params,
                 on,
-                maxTime: 20,
-                timeToWait: 1000
+                waitTime: 2000
               })
               resolve(res)
             } catch (e: any) {
@@ -606,40 +602,40 @@ datadir=${dataDir}`
               return
             }
           } else {
+            // Use the real `mariadbd` (foreground) instead of the `mariadbd-safe`
+            // wrapper that version.bin points to — serviceStartSpawn backgrounds the
+            // process itself and needs a foreground server (no fork-and-exit wrapper).
+            const serverBin = join(dirname(bin), 'mariadbd')
             const params = [
-              `--defaults-file="${m}"`,
-              `--pid-file="${p}"`,
+              `--defaults-file=${m}`,
+              `--pid-file=${p}`,
               '--slow-query-log=ON',
-              `--slow-query-log-file="${s}"`,
-              `--log-error="${e}"`
+              `--slow-query-log-file=${s}`,
+              `--log-error=${e}`
             ]
             if (version?.flag === 'macports') {
-              params.push(`--lc-messages-dir="/opt/local/share/${basename(version.path)}/english"`)
+              params.push(`--lc-messages-dir=/opt/local/share/${basename(version.path)}/english`)
             }
 
             if (skipGrantTables) {
               params.push(`--socket=/tmp/mysql.${version.version}.sock`)
-              params.push(`--datadir="${ddir}"`)
-              params.push('--bind-address="127.0.0.1"')
+              params.push(`--datadir=${ddir}`)
+              params.push('--bind-address=127.0.0.1')
               params.push(`--port=${port}`)
               params.push('--skip-grant-tables')
             } else {
               params.push(`--socket=/tmp/mysql.sock`)
             }
 
-            const bin = version.bin
-            const execEnv = ''
-            const execArgs = params.join(' ')
-
             try {
-              const res = await serviceStartExec({
+              const res = await serviceStartSpawn({
                 version,
                 pidPath: p,
                 baseDir,
-                bin,
-                execArgs,
-                execEnv,
-                on
+                bin: serverBin,
+                execArgs: params,
+                on,
+                waitTime: 2000
               })
               resolve(res)
             } catch (e: any) {

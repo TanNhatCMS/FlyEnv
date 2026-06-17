@@ -4,17 +4,19 @@ import { Base } from '../Base'
 import type { OnlineVersionItem, SoftInstalled } from '@shared/app'
 import {
   AppLog,
-  serviceStartExec,
   versionBinVersion,
   versionFilterSame,
   versionFixed,
   versionLocalFetch,
   versionSort,
   mkdirp,
-  serviceStartExecWin,
   copyFile,
-  binXattrFix
+  binXattrFix,
+  downloadFile,
+  zipUnpack,
+  rename
 } from '../../Fn'
+import { serviceStartSpawn } from '../../util/ServiceStart'
 import { ForkPromise } from '@shared/ForkPromise'
 import TaskQueue from '../../TaskQueue'
 import { I18nT } from '@lang/index'
@@ -67,38 +69,19 @@ class Qdrant extends Base {
       const baseDir = join(global.Server.BaseDir!, `qdrant`)
       await mkdirp(baseDir)
 
-      if (isWindows()) {
-        try {
-          const res = await serviceStartExecWin({
-            version,
-            pidPath: this.pidPath,
-            baseDir,
-            bin,
-            on,
-            checkPidFile: false
-          })
-          resolve(res)
-        } catch (e: any) {
-          console.log('-k start err: ', e)
-          reject(e)
-          return
-        }
-      } else {
-        try {
-          const res = await serviceStartExec({
-            version,
-            pidPath: this.pidPath,
-            baseDir,
-            bin,
-            on,
-            checkPidFile: false
-          })
-          resolve(res)
-        } catch (e: any) {
-          console.log('-k start err: ', e)
-          reject(e)
-          return
-        }
+      try {
+        const res = await serviceStartSpawn({
+          version,
+          pidPath: this.pidPath,
+          baseDir,
+          bin,
+          on
+        })
+        resolve(res)
+      } catch (e: any) {
+        console.log('-k start err: ', e)
+        reject(e)
+        return
       }
     })
   }
@@ -181,6 +164,26 @@ class Qdrant extends Base {
     await super._installSoftHandle(row)
     if (isMacOS()) {
       await binXattrFix(row.bin)
+    }
+    try {
+      const staticDir = join(row.appDir, 'static')
+      if (!existsSync(staticDir)) {
+        const webUiVersion = 'v0.2.13'
+        const webUiUrl = `https://github.com/qdrant/qdrant-web-ui/releases/download/${webUiVersion}/dist-qdrant.zip`
+        const webUiZip = join(global.Server.Cache!, `qdrant-web-ui-${webUiVersion}.zip`)
+        if (!existsSync(webUiZip)) {
+          await downloadFile(webUiUrl, webUiZip)
+        }
+        if (existsSync(webUiZip)) {
+          await zipUnpack(webUiZip, row.appDir)
+          const distDir = join(row.appDir, 'dist')
+          if (existsSync(distDir)) {
+            await rename(distDir, staticDir)
+          }
+        }
+      }
+    } catch (e) {
+      console.log('qdrant web ui install error: ', e)
     }
   }
 

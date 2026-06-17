@@ -6,7 +6,6 @@ import {
   AppLog,
   brewInfoJson,
   serviceStartExec,
-  serviceStartExecCMD,
   versionFilterSame,
   versionFixed,
   versionLocalFetch,
@@ -21,6 +20,7 @@ import {
   chmod,
   binXattrFix
 } from '../../Fn'
+import { serviceStartSpawn } from '../../util/ServiceStart'
 import { ForkPromise } from '@shared/ForkPromise'
 import { I18nT } from '@lang/index'
 import TaskQueue from '../../TaskQueue'
@@ -84,16 +84,20 @@ class FrankenPHP extends Base {
       const baseDir = join(global.Server.BaseDir!, 'frankenphp')
       await mkdirp(baseDir)
 
-      if (isWindows()) {
+      if (isLinux()) {
+        // Linux web servers bind privileged ports (80/443) and need root,
+        // which serviceStartSpawn cannot provide — keep the Helper script path.
+        const execEnv = ``
         const execArgs = `run --config "${iniFile}" --pidfile "${this.pidPath}"`
         try {
-          const res = await serviceStartExecCMD({
+          const res = await serviceStartExec({
+            root: true,
             version,
             pidPath: this.pidPath,
             baseDir,
             bin,
             execArgs,
-            execEnv: '',
+            execEnv,
             on
           })
           resolve(res)
@@ -103,17 +107,14 @@ class FrankenPHP extends Base {
           return
         }
       } else {
-        const execEnv = ``
-        const execArgs = `run --config "${iniFile}" --pidfile "${this.pidPath}"`
+        const execArgs = ['run', '--config', iniFile, '--pidfile', this.pidPath]
         try {
-          const res = await serviceStartExec({
-            root: isLinux(),
+          const res = await serviceStartSpawn({
             version,
             pidPath: this.pidPath,
             baseDir,
             bin,
             execArgs,
-            execEnv,
             on
           })
           resolve(res)

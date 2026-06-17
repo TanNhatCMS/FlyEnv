@@ -17,9 +17,9 @@ import {
   writeFile,
   mkdirp,
   zipUnpack,
-  serviceStartExecCMD,
   moveChildDirToParent
 } from '../../Fn'
+import { serviceStartSpawn } from '../../util/ServiceStart'
 import TaskQueue from '../../TaskQueue'
 import { fetchHostList } from '../Host/HostFile'
 import { I18nT } from '@lang/index'
@@ -163,16 +163,15 @@ class Nginx extends Base {
 
         const pid = join(global.Server.NginxDir!, 'logs/nginx.pid')
 
-        const execArgs = `-p "${p}"`
+        const execArgs = ['-p', p]
 
         try {
-          const res = await serviceStartExecCMD({
+          const res = await serviceStartSpawn({
             version,
             pidPath: pid,
             baseDir,
             bin,
             execArgs,
-            execEnv,
             on
           })
           resolve(res)
@@ -188,26 +187,50 @@ class Nginx extends Base {
         const temp_path = join(global.Server.NginxDir!, 'common/run')
         await mkdirp(temp_path)
         await this._fixConf()
-        const g = `pid ${pid};error_log ${errlog};`
         const p = join(global.Server.NginxDir!, 'common')
-        const execArgs = `-p "${p}" -e "${errlog}" -c ${c} -g "${g}"`
 
-        try {
-          const res = await serviceStartExec({
-            root: isLinux(),
-            version,
-            pidPath: pid,
-            baseDir,
-            bin,
-            execArgs,
-            execEnv,
-            on
-          })
-          resolve(res)
-        } catch (e: any) {
-          console.log('-k start err: ', e)
-          reject(e)
-          return
+        if (isLinux()) {
+          // Linux nginx binds privileged ports (80/443) and needs root, which
+          // serviceStartSpawn cannot provide — keep the Helper script path.
+          const g = `pid ${pid};error_log ${errlog};`
+          const execArgs = `-p "${p}" -e "${errlog}" -c ${c} -g "${g}"`
+          try {
+            const res = await serviceStartExec({
+              root: true,
+              version,
+              pidPath: pid,
+              baseDir,
+              bin,
+              execArgs,
+              execEnv,
+              on
+            })
+            resolve(res)
+          } catch (e: any) {
+            console.log('-k start err: ', e)
+            reject(e)
+            return
+          }
+        } else {
+          // `daemon off;` keeps nginx in the foreground so serviceStartSpawn's
+          // detached spawn owns the master process directly (no fork-and-exit).
+          const g = `pid ${pid};error_log ${errlog};daemon off;`
+          const execArgs = ['-p', p, '-e', errlog, '-c', c, '-g', g]
+          try {
+            const res = await serviceStartSpawn({
+              version,
+              pidPath: pid,
+              baseDir,
+              bin,
+              execArgs,
+              on
+            })
+            resolve(res)
+          } catch (e: any) {
+            console.log('-k start err: ', e)
+            reject(e)
+            return
+          }
         }
       }
     })

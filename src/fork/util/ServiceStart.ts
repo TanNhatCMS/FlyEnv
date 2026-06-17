@@ -47,6 +47,58 @@ export type ServiceStartSpawnParams = {
   execEnv?: Record<string, string>
   on: (...args: any) => void
   waitTime?: number
+  cwd?: string
+  /** Override where the process stdout is written (default: baseDir/<flag>-<ver>-start-out.log) */
+  outFile?: string
+  /** Override where the process stderr is written (default: baseDir/<flag>-<ver>-start-error.log) */
+  errFile?: string
+}
+
+type UnixCustomerServiceStartScriptParams = {
+  env: string
+  cwd: string
+  commandType: 'command' | 'file'
+  command: string
+  commandFile: string
+  outFile: string
+  errFile: string
+  shell: '/bin/bash' | '/bin/zsh'
+}
+
+function shellSingleQuoted(value: string): string {
+  return `'${`${value}`.replace(/'/g, "'\\''")}'`
+}
+
+function shellDoubleQuoted(value: string): string {
+  return `"${`${value}`
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\$/g, '\\$')
+    .replace(/`/g, '\\`')}"`
+}
+
+export function buildUnixCustomerServiceStartScript(
+  params: UnixCustomerServiceStartScriptParams
+): string {
+  const lines = [
+    'export LC_ALL=en_US.UTF-8',
+    'export LANG=en_US.UTF-8',
+    params.env.trim(),
+    `cd ${shellDoubleQuoted(params.cwd)}`
+  ].filter(Boolean)
+  const outFile = shellDoubleQuoted(params.outFile)
+  const errFile = shellDoubleQuoted(params.errFile)
+
+  if (params.commandType === 'file') {
+    lines.push(`nohup ${shellDoubleQuoted(params.commandFile)} > ${outFile} 2>${errFile} &`)
+  } else {
+    lines.push(
+      `nohup ${params.shell} -lc ${shellSingleQuoted(params.command)} > ${outFile} 2>${errFile} &`
+    )
+  }
+
+  lines.push('echo "##FlyEnv-Process-ID$!FlyEnv-Process-ID##"')
+  return lines.join('\n')
 }
 
 export async function serviceStartExec(
@@ -99,7 +151,7 @@ export async function serviceStartExec(
   process.chdir(baseDir)
   let res: any
   let error: any
-  const shell = isMacOS() ? 'zsh' : 'bash'
+  const shell = isMacOS() ? '/bin/zsh' : '/bin/bash'
   if (param?.root) {
     try {
       res = await Helper.send('tools', 'runScript', shell, psPath)
@@ -124,6 +176,25 @@ export async function serviceStartExec(
   })
 
   if (!checkPidFile) {
+    if (!res) {
+      let msg = 'Start Fail'
+      if (error) {
+        msg = error && error?.toString ? error?.toString() : ''
+      }
+      if (!error && existsSync(errFile)) {
+        msg = await readFile(errFile, 'utf-8')
+      }
+      on({
+        'APP-On-Log': AppLog(
+          'error',
+          I18nT('appLog.startServiceFail', {
+            error: msg,
+            service: `${version.typeFlag}-${version.version}`
+          })
+        )
+      })
+      throw new Error(msg)
+    }
     let pid = ''
     const stdout = res.stdout.trim() + '\n' + res.stderr.trim()
     const regex = /FlyEnv-Process-ID(.*?)FlyEnv-Process-ID/g
@@ -162,10 +233,11 @@ export async function serviceStartExec(
     throw new Error(res?.error ?? 'Start Fail')
   }
   let msg = 'Start Fail'
-  if (existsSync(errFile)) {
-    msg = await readFile(errFile, 'utf-8')
-  } else if (error) {
+  if (error) {
     msg = error && error?.toString ? error?.toString() : ''
+  }
+  if (!error && existsSync(errFile)) {
+    msg = await readFile(errFile, 'utf-8')
   }
   on({
     'APP-On-Log': AppLog(
@@ -205,69 +277,58 @@ export async function customerServiceStartExec(
     await removeByRoot(outFile)
   } catch {}
 
-  let psScript = await readFile(join(global.Server.Static!, 'sh/flyenv-async-exec.sh'), 'utf8')
-
-  let bin = ''
+  let commandFile = ''
   if (version.commandType === 'file') {
-    bin = version.commandFile
-  } else {
-    bin = join(baseDir, `${version.id}.start.sh`)
-    await writeFile(bin, version.command)
+    commandFile = version.commandFile
   }
-  const uinfo = userInfo()
-  const uid = uinfo.uid
-  const gid = uinfo.gid
-
-  try {
-    await execPromise(`chmod 0777 "${bin}"`)
-  } catch {}
-
-  try {
-    await execPromise(`chown -R ${uid}:${gid} "${bin}"`)
-  } catch {}
 
   let env: string = ''
   if (version.binBin && existsSync(version.binBin)) {
     env = `export PATH="${dirname(version.binBin)}:$PATH"`
   }
-  const cwd = version.workDir && existsSync(version.workDir) ? version.workDir : dirname(bin)
 
-  psScript = psScript
-    .replace('#ENV#', env)
-    .replace('#CWD#', cwd)
-    .replace('#BIN#', bin)
-    .replace('#ARGS#', '')
-    .replace('#OUTLOG#', outFile)
-    .replace('#ERRLOG#', errFile)
+  const shell = isMacOS() ? '/bin/zsh' : '/bin/bash'
+  const fallbackCwd = version.commandType === 'file' ? dirname(commandFile) : baseDir
+  const cwd = version.workDir && existsSync(version.workDir) ? version.workDir : fallbackCwd
 
-  const psName = `start-${version.id.trim()}.sh`.split(' ').join('')
-  const psPath = join(baseDir, psName)
-  await writeFile(psPath, psScript)
+  if (version.commandType === 'file') {
+    const uinfo = userInfo()
+    const uid = uinfo.uid
+    const gid = uinfo.gid
 
-  try {
-    await execPromise(`chmod 0777 "${psPath}"`)
-  } catch {}
+    try {
+      await execPromise(`chmod 0777 "${commandFile}"`)
+    } catch {}
 
-  try {
-    await execPromise(`chown -R ${uid}:${gid} "${psPath}"`)
-  } catch {}
+    try {
+      await execPromise(`chown -R ${uid}:${gid} "${commandFile}"`)
+    } catch {}
+  }
 
-  const shell = isMacOS() ? 'zsh' : 'bash'
+  const inlineScript = buildUnixCustomerServiceStartScript({
+    env,
+    cwd,
+    commandType: version.commandType,
+    command: version.command,
+    commandFile,
+    outFile,
+    errFile,
+    shell
+  })
 
   process.chdir(baseDir)
   let res: any
   let error: any
   try {
     if (version.isSudo) {
-      res = await execPromiseSudo([shell, psName], {
+      res = await execPromiseSudo([shell, '-lc', inlineScript], {
         cwd: baseDir,
         env: version.env
       })
       console.log('customerServiceStartExec execPromiseSudo execRes: ', res)
     } else {
-      res = await spawnPromiseWithEnv(shell, [psName], {
+      res = await spawnPromiseWithEnv(shell, ['-lc', inlineScript], {
         cwd: baseDir,
-        shell: `/bin/${shell}`,
         env: version.env
       })
     }
@@ -363,8 +424,13 @@ export async function serviceStartSpawn(
   const typeFlag = version.typeFlag
   const versionStr = version.version!.trim()
 
-  const outFile = join(baseDir, `${typeFlag}-${versionStr}-start-out.log`.split(' ').join(''))
-  const errFile = join(baseDir, `${typeFlag}-${versionStr}-start-error.log`.split(' ').join(''))
+  const outFile =
+    param?.outFile ?? join(baseDir, `${typeFlag}-${versionStr}-start-out.log`.split(' ').join(''))
+  const errFile =
+    param?.errFile ?? join(baseDir, `${typeFlag}-${versionStr}-start-error.log`.split(' ').join(''))
+
+  await mkdirp(dirname(outFile))
+  await mkdirp(dirname(errFile))
 
   const out = openSync(outFile, 'a')
   const err = openSync(errFile, 'a')
@@ -376,7 +442,7 @@ export async function serviceStartSpawn(
   })
 
   const doExec = (): Promise<{ 'APP-Service-Start-PID': string }> => {
-    const cwd = dirname(bin)
+    const cwd = param?.cwd ?? dirname(bin)
     const options: any = {
       detached: true,
       stdio: ['ignore', out, err],

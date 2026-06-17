@@ -94,9 +94,20 @@ export const versionBinVersion = (
   findInError?: boolean
 ): Promise<{ version?: string; error?: string }> => {
   return new Promise(async (resolve) => {
+    const outputFromExecError = (err: any) => {
+      return [err?.stdout, err?.stderr]
+        .filter((s) => `${s ?? ''}`.trim().length > 0)
+        .map((s) => `${s}`)
+        .join('\n')
+    }
+    const messageFromExecError = (err: any) => {
+      return [outputFromExecError(err), `${err}`]
+        .filter((s) => `${s ?? ''}`.trim().length > 0)
+        .join('\n')
+    }
     const handleCatch = (err: any) => {
       resolve({
-        error: `${command}\n${err}`,
+        error: `${command}\n${messageFromExecError(err)}`,
         version: undefined
       })
     }
@@ -126,8 +137,8 @@ export const versionBinVersion = (
       appDebugLog('[versionBinVersion][error]', `${e}`).catch()
       if (findInError) {
         handleThen({
-          stdout: '',
-          stderr: `${e}`
+          stdout: outputFromExecError(e) || `${e}`,
+          stderr: ''
         })
         return
       }
@@ -472,9 +483,9 @@ export const brewInfoJson = async (names: string[]) => {
   if (!names.length) {
     return info
   }
-  const command = ['brew', 'info', ...names, '--json', '--formula'].join(' ')
-  console.log('brewinfo doRun: ', command)
-  try {
+  const fetchInfo = async (formulaNames: string[]) => {
+    const command = ['brew', 'info', ...formulaNames, '--json', '--formula'].join(' ')
+    console.log('brewinfo doRun: ', command)
     const res = await execPromiseWithEnv(command)
     const arr = JSON.parse(res.stdout)
     arr.forEach((item: any) => {
@@ -485,8 +496,22 @@ export const brewInfoJson = async (names: string[]) => {
         flag: 'brew'
       })
     })
+  }
+  try {
+    await fetchInfo(names)
   } catch (e) {
-    console.error('brewInfoJson nginx: ', e)
+    const message = e instanceof Error ? e.message : `${e}`
+    console.warn('brewInfoJson batch failed, retrying separately: ', message)
+    if (names.length > 1) {
+      for (const name of names) {
+        try {
+          await fetchInfo([name])
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : `${error}`
+          console.warn(`brewInfoJson skipped ${name}: `, errorMessage)
+        }
+      }
+    }
   }
   return info
 }

@@ -15,13 +15,12 @@ import {
   readFile,
   remove,
   writeFile,
-  serviceStartExec,
   copyFile,
   chmod,
   waitTime,
-  execPromise,
-  serviceStartExecWin
+  execPromise
 } from '../../Fn'
+import { serviceStartSpawn } from '../../util/ServiceStart'
 import { ForkPromise } from '@shared/ForkPromise'
 import { I18nT } from '@lang/index'
 import TaskQueue from '../../TaskQueue'
@@ -79,48 +78,22 @@ class MeiliSearch extends Base {
 
       const baseDir = join(global.Server.BaseDir!, 'meilisearch')
 
-      if (isWindows()) {
-        const execArgs = `--config-file-path \`"${iniFile}\`"`
-        const execEnv = ``
-
-        try {
-          const res = await serviceStartExecWin({
-            version,
-            pidPath: this.pidPath,
-            baseDir,
-            cwd: working_dir,
-            bin,
-            execArgs,
-            execEnv,
-            on,
-            checkPidFile: false
-          })
-          resolve(res)
-        } catch (e: any) {
-          console.log('-k start err: ', e)
-          reject(e)
-          return
-        }
-      } else {
-        const execArgs = `--config-file-path "${iniFile}"`
-        try {
-          const res = await serviceStartExec({
-            version,
-            pidPath: this.pidPath,
-            baseDir,
-            bin,
-            execArgs,
-            on,
-            timeToWait: 1000,
-            checkPidFile: false,
-            cwd: working_dir
-          })
-          resolve(res)
-        } catch (e: any) {
-          console.log('-k start err: ', e)
-          reject(e)
-          return
-        }
+      const execArgs = ['--config-file-path', iniFile]
+      try {
+        const res = await serviceStartSpawn({
+          version,
+          pidPath: this.pidPath,
+          baseDir,
+          cwd: working_dir,
+          bin,
+          execArgs,
+          on
+        })
+        resolve(res)
+      } catch (e: any) {
+        console.log('-k start err: ', e)
+        reject(e)
+        return
       }
     })
   }

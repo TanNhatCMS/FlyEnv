@@ -18,9 +18,9 @@ import {
   versionSort,
   readFile,
   writeFile,
-  mkdirp,
-  serviceStartExecCMD
+  mkdirp
 } from '../../Fn'
+import { serviceStartSpawn } from '../../util/ServiceStart'
 import { ForkPromise } from '@shared/ForkPromise'
 import TaskQueue from '../../TaskQueue'
 import { fetchHostList } from '../Host/HostFile'
@@ -347,15 +347,38 @@ IncludeOptional "${vhost}"`
       const pidFile = join(global.Server.ApacheDir!, 'httpd.pid')
       const bin = version.bin
       if (isWindows()) {
-        const execArgs = `-f "${conf}"`
+        const execArgs = ['-f', conf]
         try {
-          const res = await serviceStartExecCMD({
+          const res = await serviceStartSpawn({
             version,
             pidPath: pidFile,
             baseDir: global.Server.ApacheDir!,
             bin,
             execArgs,
-            execEnv: '',
+            on
+          })
+          resolve(res)
+        } catch (e: any) {
+          console.log('-k start err: ', e)
+          reject(e)
+          return
+        }
+      } else if (isLinux()) {
+        // Linux Apache binds privileged ports (80/443) and needs root, which
+        // serviceStartSpawn cannot provide — keep the Helper script path.
+        const logFile = join(global.Server.ApacheDir, `common/logs/access_log`)
+        const baseDir = global.Server.ApacheDir!
+        const execEnv = ``
+        const execArgs = `-f "${conf}" -c "PidFile \"${pidFile}\"" -c "CustomLog \"${logFile}\" common" -k start`
+        try {
+          const res = await serviceStartExec({
+            root: true,
+            version,
+            pidPath: pidFile,
+            baseDir,
+            bin,
+            execArgs,
+            execEnv,
             on
           })
           resolve(res)
@@ -365,20 +388,27 @@ IncludeOptional "${vhost}"`
           return
         }
       } else {
+        // `-D FOREGROUND` keeps httpd in the foreground (vs `-k start`, which
+        // daemonizes) so the detached spawn owns the process directly.
         const logFile = join(global.Server.ApacheDir, `common/logs/access_log`)
         const baseDir = global.Server.ApacheDir!
-        const execEnv = ``
-        const execArgs = `-f "${conf}" -c "PidFile \"${pidFile}\"" -c "CustomLog \"${logFile}\" common" -k start`
-
+        const execArgs = [
+          '-f',
+          conf,
+          '-c',
+          `PidFile "${pidFile}"`,
+          '-c',
+          `CustomLog "${logFile}" common`,
+          '-D',
+          'FOREGROUND'
+        ]
         try {
-          const res = await serviceStartExec({
-            root: isLinux(),
+          const res = await serviceStartSpawn({
             version,
             pidPath: pidFile,
             baseDir,
             bin,
             execArgs,
-            execEnv,
             on
           })
           resolve(res)

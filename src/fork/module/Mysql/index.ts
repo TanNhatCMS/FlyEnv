@@ -17,15 +17,15 @@ import {
   portSearch,
   versionFilterSame,
   AppLog,
-  serviceStartExec,
+  serviceStartExecCMD,
   mkdirp,
   writeFile,
   chmod,
   remove,
-  serviceStartExecCMD,
   spawnPromise,
   readFile
 } from '../../Fn'
+import { serviceStartSpawn } from '../../util/ServiceStart'
 import { ForkPromise } from '@shared/ForkPromise'
 import TaskQueue from '../../TaskQueue'
 import Helper from '../../Helper'
@@ -230,7 +230,7 @@ datadir=${pathFixedToUnix(dataDir)}`
           const ddir = config?.mysqld?.datadir ?? dataDir
 
           if (isWindows()) {
-            const params = [
+            const execArgs = [
               `--defaults-file="${m}"`,
               `--pid-file="${p}"`,
               '--user=mysql',
@@ -239,26 +239,22 @@ datadir=${pathFixedToUnix(dataDir)}`
               `--log-error="${e}"`,
               '--standalone'
             ]
-
             if (skipGrantTables) {
-              params.push(`--datadir="${ddir}"`)
-              params.push('--bind-address="127.0.0.1"')
-              params.push(`--port=${port}`)
-              params.push(`--enable-named-pipe`)
-              params.push('--skip-grant-tables')
+              execArgs.push(`--datadir="${ddir}"`)
+              execArgs.push('--bind-address="127.0.0.1"')
+              execArgs.push(`--port=${port}`)
+              execArgs.push(`--enable-named-pipe`)
+              execArgs.push('--skip-grant-tables')
             }
-
-            const execArgs = params.join(' ')
-
-            console.log('execArgs: ', execArgs)
-
+            const execArgsStr = execArgs.join(' ')
+            console.log('execArgs: ', execArgsStr)
             try {
               const res = await serviceStartExecCMD({
                 version,
                 pidPath: p,
                 baseDir,
                 bin,
-                execArgs,
+                execArgs: execArgsStr,
                 execEnv,
                 on,
                 timeToWait: 1000,
@@ -271,38 +267,40 @@ datadir=${pathFixedToUnix(dataDir)}`
               return
             }
           } else {
+            // Use the real `mysqld` (foreground) instead of the `mysqld_safe` wrapper
+            // that version.bin points to — serviceStartSpawn backgrounds the process
+            // itself and needs a foreground server (no fork-and-exit wrapper).
+            const serverBin = join(dirname(bin), 'mysqld')
             const params = [
-              `--defaults-file="${m}"`,
-              `--pid-file="${p}"`,
+              `--defaults-file=${m}`,
+              `--pid-file=${p}`,
               '--user=mysql',
-              `--slow-query-log-file="${s}"`,
-              `--log-error="${e}"`
+              `--slow-query-log-file=${s}`,
+              `--log-error=${e}`
             ]
             if (version?.flag === 'macports') {
-              params.push(`--lc-messages-dir="/opt/local/share/${basename(version.path)}/english"`)
+              params.push(`--lc-messages-dir=/opt/local/share/${basename(version.path)}/english`)
             }
 
             if (skipGrantTables) {
               params.push(`--socket=/tmp/mysql.${version.version}.sock`)
-              params.push(`--datadir="${ddir}"`)
-              params.push('--bind-address="127.0.0.1"')
+              params.push(`--datadir=${ddir}`)
+              params.push('--bind-address=127.0.0.1')
               params.push(`--port=${port}`)
               params.push('--skip-grant-tables')
             } else {
               params.push(`--socket=/tmp/mysql.sock`)
             }
 
-            const execArgs = params.join(' ')
-
             try {
-              const res = await serviceStartExec({
+              const res = await serviceStartSpawn({
                 version,
                 pidPath: p,
                 baseDir,
-                bin,
-                execArgs,
-                execEnv,
-                on
+                bin: serverBin,
+                execArgs: params,
+                on,
+                waitTime: 2000
               })
               resolve(res)
             } catch (e: any) {
@@ -504,7 +502,7 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
         const execEnv = ''
         return new Promise(async (resolve, reject) => {
           if (isWindows()) {
-            const params = [
+            const execArgs = [
               `--defaults-file="${m}"`,
               `--datadir="${dataDir}"`,
               `--port="${version.port}"`,
@@ -515,10 +513,7 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
               `--log-error="${e}"`,
               `--socket="${sock}"`,
               '--standalone'
-            ]
-
-            const execArgs = params.join(' ')
-
+            ].join(' ')
             try {
               const res = await serviceStartExecCMD({
                 version: version.version as any,
@@ -538,6 +533,8 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
               return
             }
           } else {
+            // Foreground `mysqld` (not the `mysqld_safe` wrapper) for serviceStartSpawn.
+            const serverBin = join(dirname(bin), 'mysqld')
             const params = [
               `--defaults-file=${m}`,
               `--datadir=${dataDir}`,
@@ -554,17 +551,15 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
               )
             }
 
-            const execArgs = params.join(' ')
-
             try {
-              const res = await serviceStartExec({
+              const res = await serviceStartSpawn({
                 version: version.version as any,
                 pidPath: p,
                 baseDir,
-                bin,
-                execArgs,
-                execEnv,
-                on
+                bin: serverBin,
+                execArgs: params,
+                on,
+                waitTime: 2000
               })
               resolve(res)
             } catch (e: any) {

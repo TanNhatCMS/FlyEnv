@@ -5,7 +5,6 @@ import type { OnlineVersionItem, SoftInstalled } from '@shared/app'
 import {
   AppLog,
   brewInfoJson,
-  serviceStartExec,
   versionBinVersion,
   versionFilterSame,
   versionFixed,
@@ -14,13 +13,12 @@ import {
   readFile,
   writeFile,
   mkdirp,
-  serviceStartExecWin,
   binXattrFix
 } from '../../Fn'
+import { serviceStartSpawn } from '../../util/ServiceStart'
 import { ForkPromise } from '@shared/ForkPromise'
 import TaskQueue from '../../TaskQueue'
 import { I18nT } from '@lang/index'
-import { EOL } from 'os'
 import { isMacOS, isWindows, pathFixedToUnix } from '@shared/utils'
 
 class MailPit extends Base {
@@ -115,62 +113,25 @@ class MailPit extends Base {
       const baseDir = join(global.Server.BaseDir!, `mailpit`)
       await mkdirp(baseDir)
 
-      if (isWindows()) {
-        const envs: string[] = []
-        for (const k in opt) {
-          const v = opt[k]
-          envs.push(`$env:${k}="${v}"`)
-        }
-        envs.push('')
+      const execEnv: Record<string, string> = {}
+      for (const k in opt) {
+        execEnv[k] = opt[k]
+      }
 
-        const execEnv = envs.join(EOL)
-        const execArgs = ` `
-
-        try {
-          const res = await serviceStartExecWin({
-            version,
-            pidPath: this.pidPath,
-            baseDir,
-            bin,
-            execArgs,
-            execEnv,
-            on,
-            checkPidFile: false
-          })
-          resolve(res)
-        } catch (e: any) {
-          console.log('-k start err: ', e)
-          reject(e)
-          return
-        }
-      } else {
-        const envs: string[] = []
-        for (const k in opt) {
-          const v = opt[k]
-          envs.push(`export ${k}="${v}"`)
-        }
-        envs.push('')
-
-        const execEnv = envs.join(EOL)
-        const execArgs = ``
-
-        try {
-          const res = await serviceStartExec({
-            version,
-            pidPath: this.pidPath,
-            baseDir,
-            bin,
-            execArgs,
-            execEnv,
-            on,
-            checkPidFile: false
-          })
-          resolve(res)
-        } catch (e: any) {
-          console.log('-k start err: ', e)
-          reject(e)
-          return
-        }
+      try {
+        const res = await serviceStartSpawn({
+          version,
+          pidPath: this.pidPath,
+          baseDir,
+          bin,
+          execEnv,
+          on
+        })
+        resolve(res)
+      } catch (e: any) {
+        console.log('-k start err: ', e)
+        reject(e)
+        return
       }
     })
   }
@@ -218,14 +179,28 @@ class MailPit extends Base {
         .then(async (list) => {
           versions = list.flat()
           versions = versionFilterSame(versions)
-          const all = versions.map((item) =>
-            TaskQueue.run(
-              versionBinVersion,
-              item.bin,
-              `"${item.bin}" version`,
-              /(v)(\d+(\.\d+){1,4})( )/g
+          const fetchMailpitBinVersion = async (bin: string) => {
+            const reg = /(v)(\d+(\.\d+){1,4})( )/g
+            const noReleaseCheck = await versionBinVersion(
+              bin,
+              `"${bin}" version --no-release-check`,
+              reg
             )
-          )
+            if (noReleaseCheck.version) {
+              return noReleaseCheck
+            }
+
+            const fallback = await versionBinVersion(bin, `"${bin}" version`, reg, true)
+            if (fallback.version) {
+              return fallback
+            }
+
+            return {
+              version: fallback.version,
+              error: fallback.error ?? noReleaseCheck.error
+            }
+          }
+          const all = versions.map((item) => TaskQueue.run(fetchMailpitBinVersion, item.bin))
           return Promise.all(all)
         })
         .then((list) => {

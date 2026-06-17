@@ -17,6 +17,7 @@ import { ServiceStartParams } from './ServiceStart'
 import type { ModuleExecItem } from '@shared/app'
 import { ProcessPidListByPid } from '@shared/Process.win'
 import EnvSync from '@shared/EnvSync'
+import { encodePowerShellCommand, powerShellInlineArgs } from '@shared/PowerShellCommand'
 
 export async function readFileAsUTF8(filePath: string): Promise<string> {
   try {
@@ -56,142 +57,100 @@ export async function readFileAsUTF8(filePath: string): Promise<string> {
   }
 }
 
-export async function serviceStartExec(
-  param: ServiceStartParams
-): Promise<{ 'APP-Service-Start-PID': string }> {
-  const baseDir = param.baseDir
-  const version = param.version
-  const execEnv = param?.execEnv ?? ''
-  const cwd = param?.cwd ?? dirname(param.bin)
-  const bin = param.bin
-  const execArgs = param?.execArgs ?? ' '
-  const on = param.on
-  const checkPidFile = param?.checkPidFile ?? true
-  const pidPath = param?.pidPath ?? ''
-  const maxTime = param?.maxTime ?? 20
-  const timeToWait = param?.timeToWait ?? 500
+type WindowsCmdServiceStartCommandParams = {
+  execEnv: string
+  cwd: string
+  bin: string
+  execArgs: string
+  outFile: string
+  errFile: string
+}
 
-  if (pidPath && existsSync(pidPath)) {
-    try {
-      await remove(pidPath)
-    } catch {}
-  }
+type WindowsCustomerServiceStartScriptParams = {
+  env: string
+  cwd: string
+  commandType: 'command' | 'file'
+  command: string
+  commandFile: string
+  outFile: string
+  errFile: string
+}
 
-  const typeFlag = version.typeFlag
-  const versionStr = version.version!.trim()
+function powerShellSingleQuoted(value: string): string {
+  return `'${`${value}`.replace(/'/g, "''")}'`
+}
 
-  const outFile = join(baseDir, `${typeFlag}-${versionStr}-start-out.log`.split(' ').join(''))
-  const errFile = join(baseDir, `${typeFlag}-${versionStr}-start-error.log`.split(' ').join(''))
+function powerShellArray(values: string[]): string {
+  return `@(${values.map(powerShellSingleQuoted).join(', ')})`
+}
 
-  let psScript = await readFile(join(global.Server.Static!, 'sh/flyenv-async-exec.ps1'), 'utf8')
-
-  psScript = psScript
-    .replace('#ENV#', execEnv)
-    .replace('#CWD#', cwd)
-    .replace('#BIN#', bin)
-    .replace('#ARGS#', execArgs)
-    .replace('#OUTLOG#', outFile)
-    .replace('#ERRLOG#', errFile)
-
-  const psName = `${typeFlag}-${versionStr}-start.ps1`.split(' ').join('')
-  const psPath = join(baseDir, psName)
-  await writeFile(psPath, psScript)
-
-  on({
-    'APP-On-Log': AppLog('info', I18nT('appLog.execStartCommand'))
-  })
-
-  process.chdir(baseDir)
-  let res: any
-  try {
-    await EnvSync.sync()
-    res = await spawnPromiseWithEnv(
-      'powershell.exe',
-      [
-        '-NoProfile',
-        '-ExecutionPolicy',
-        'Bypass',
-        '-Command',
-        `"Unblock-File -LiteralPath './${psName}'; & './${psName}'"`
-      ],
-      {
-        shell: EnvSync.PowerShellPath || 'powershell.exe',
-        cwd: baseDir
-      }
+export function buildWindowsCmdServiceStartCommand(
+  params: WindowsCmdServiceStartCommandParams
+): string {
+  const lines = ['chcp 65001>nul']
+  const execEnv = params.execEnv.trim()
+  if (execEnv) {
+    lines.push(
+      ...execEnv
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
     )
-  } catch (e) {
-    on({
-      'APP-On-Log': AppLog(
-        'error',
-        I18nT('appLog.execStartCommandFail', {
-          error: e,
-          service: `${version.typeFlag}-${version.version}`
-        })
-      )
-    })
-    throw e
   }
+  lines.push(`cd /d "${params.cwd}"`)
+  const execArgs = params.execArgs ? ` ${params.execArgs}` : ''
+  lines.push(`start "" /B ${params.bin}${execArgs} > "${params.outFile}" 2>"${params.errFile}"`)
+  return lines.join(' & ')
+}
 
-  on({
-    'APP-On-Log': AppLog('info', I18nT('appLog.execStartCommandSuccess'))
-  })
-  on({
-    'APP-Service-Start-Success': true
-  })
+export function buildWindowsCustomerServiceStartScript(
+  params: WindowsCustomerServiceStartScriptParams
+): string {
+  const argumentList =
+    params.commandType === 'file'
+      ? powerShellArray([
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-File',
+          `"${params.commandFile}"`
+        ])
+      : powerShellArray([
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-EncodedCommand',
+          encodePowerShellCommand(params.command)
+        ])
 
-  if (!checkPidFile) {
-    let pid = ''
-    const stdout = res.stdout.trim() + '\n' + res.stderr.trim()
-    const regex = /FlyEnv-Process-ID(.*?)FlyEnv-Process-ID/g
-    const match = regex.exec(stdout)
-    if (match) {
-      pid = match[1] // 捕获组 (\d+) 的内容
-    }
-    await writeFile(pidPath, pid)
-    on({
-      'APP-On-Log': AppLog('info', I18nT('appLog.startServiceSuccess', { pid: pid }))
-    })
-    return {
-      'APP-Service-Start-PID': pid
-    }
-  }
+  return `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding = [System.Text.Encoding]::UTF8
 
-  res = await waitPidFile(pidPath, 0, maxTime, timeToWait)
-  if (res) {
-    if (res?.pid) {
-      await writeFile(pidPath, res.pid)
-      on({
-        'APP-On-Log': AppLog('info', I18nT('appLog.startServiceSuccess', { pid: res.pid }))
-      })
-      return {
-        'APP-Service-Start-PID': res.pid
-      }
-    }
-    on({
-      'APP-On-Log': AppLog(
-        'error',
-        I18nT('appLog.startServiceFail', {
-          error: res?.error ?? 'Start Fail',
-          service: `${version.typeFlag}-${version.version}`
-        })
-      )
-    })
-    throw new Error(res?.error ?? 'Start Fail')
-  }
-  let msg = 'Start Fail'
-  if (existsSync(errFile)) {
-    msg = (await readFileAsUTF8(errFile)) || 'Start Fail'
-  }
-  on({
-    'APP-On-Log': AppLog(
-      'error',
-      I18nT('appLog.startServiceFail', {
-        error: msg,
-        service: `${version.typeFlag}-${version.version}`
-      })
-    )
-  })
-  throw new Error(msg)
+$env:LC_ALL = 'en_US.UTF-8'
+$env:LANG = 'en_US.UTF-8'
+
+${params.env}
+
+$OUTLOG = ${powerShellSingleQuoted(params.outFile)}
+$ERRLOG = ${powerShellSingleQuoted(params.errFile)}
+$ARGUMENTS = ${argumentList}
+
+Set-Location -LiteralPath ${powerShellSingleQuoted(params.cwd)}
+
+$process = Start-Process -FilePath "powershell.exe" \`
+    -ArgumentList $ARGUMENTS \`
+    -WindowStyle Hidden \`
+    -PassThru \`
+    -RedirectStandardOutput $OUTLOG \`
+    -RedirectStandardError $ERRLOG
+
+if ($process) {
+    Write-Host "##FlyEnv-Process-ID$($process.Id)FlyEnv-Process-ID##"
+}
+else {
+    Write-Error "Exec Failed"
+    exit 1
+}`
 }
 
 export async function serviceStartExecCMD(
@@ -221,24 +180,19 @@ export async function serviceStartExecCMD(
   const outFile = join(baseDir, `${typeFlag}-${versionStr}-start-out.log`.split(' ').join(''))
   const errFile = join(baseDir, `${typeFlag}-${versionStr}-start-error.log`.split(' ').join(''))
 
-  let psScript = await readFile(join(global.Server.Static!, 'sh/flyenv-async-exec.cmd'), 'utf8')
-
   let execBin = basename(bin)
   if (execBin.includes('.exe')) {
     execBin = `./${execBin}`
   }
 
-  psScript = psScript
-    .replace('#ENV#', execEnv)
-    .replace('#CWD#', cwd)
-    .replace('#BIN#', execBin)
-    .replace('#ARGS#', execArgs)
-    .replace('#OUTLOG#', outFile)
-    .replace('#ERRLOG#', errFile)
-
-  const psName = `${typeFlag}-${versionStr}-start.cmd`.split(' ').join('')
-  const psPath = join(baseDir, psName)
-  await writeFile(psPath, psScript)
+  const cmdScript = buildWindowsCmdServiceStartCommand({
+    execEnv,
+    cwd,
+    bin: execBin,
+    execArgs,
+    outFile,
+    errFile
+  })
 
   on({
     'APP-On-Log': AppLog('info', I18nT('appLog.execStartCommand'))
@@ -248,9 +202,10 @@ export async function serviceStartExecCMD(
   let res: any
   try {
     await EnvSync.sync()
-    res = await spawnPromiseWithEnv(psName, [], {
-      shell: EnvSync.CMDPath || 'cmd.exe',
-      cwd: baseDir
+    res = await spawnPromiseWithEnv(EnvSync.CMDPath || 'cmd.exe', ['/d', '/s', '/c', cmdScript], {
+      cwd: baseDir,
+      windowsHide: true,
+      windowsVerbatimArguments: true
     })
   } catch (e) {
     on({
@@ -333,32 +288,28 @@ export async function customerServiceStartExec(
   const outFile = join(baseDir, `${version.id}-out.log`)
   const errFile = join(baseDir, `${version.id}-error.log`)
 
-  let psScript = await readFile(join(global.Server.Static!, 'sh/flyenv-customer-exec.ps1'), 'utf8')
-
-  let bin = ''
+  let commandFile = ''
   if (version.commandType === 'file') {
-    bin = version.commandFile
+    commandFile = version.commandFile
   } else {
-    bin = join(baseDir, `${version.id}.start.ps1`)
-    await writeFile(bin, version.command)
+    commandFile = ''
   }
 
   let env: string = ''
   if (version.binBin && existsSync(version.binBin)) {
     env = `$env:PATH = "${dirname(version.binBin)};" + $env:PATH`
   }
-  const cwd = version.workDir && existsSync(version.workDir) ? version.workDir : dirname(bin)
-
-  psScript = psScript
-    .replace('#ENV#', env)
-    .replace('#CWD#', cwd)
-    .replace('#BIN#', bin)
-    .replace('#OUTLOG#', outFile)
-    .replace('#ERRLOG#', errFile)
-
-  const psName = `start-${version.id.trim()}.ps1`.split(' ').join('')
-  const psPath = join(baseDir, psName)
-  await writeFile(psPath, psScript)
+  const fallbackCwd = version.commandType === 'file' ? dirname(commandFile) : baseDir
+  const cwd = version.workDir && existsSync(version.workDir) ? version.workDir : fallbackCwd
+  const psScript = buildWindowsCustomerServiceStartScript({
+    env,
+    cwd,
+    commandType: version.commandType,
+    command: version.command,
+    commandFile,
+    outFile,
+    errFile
+  })
 
   process.chdir(baseDir)
   let res: any
@@ -366,12 +317,12 @@ export async function customerServiceStartExec(
   try {
     await EnvSync.sync()
     res = await spawnPromiseWithEnv(
-      'powershell.exe',
-      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', `\`"${psPath}\`"`],
+      EnvSync.PowerShellPath || 'powershell.exe',
+      powerShellInlineArgs(psScript),
       {
-        shell: EnvSync.PowerShellPath || 'powershell.exe',
         cwd: baseDir,
-        env: version.env
+        env: version.env,
+        windowsHide: true
       }
     )
   } catch (e) {

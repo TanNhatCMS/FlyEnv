@@ -8,7 +8,6 @@ import {
   brewInfoJson,
   brewSearch,
   portSearch,
-  serviceStartExec,
   versionBinVersion,
   versionFilterSame,
   versionFixed,
@@ -26,6 +25,7 @@ import {
   zipUnpack,
   moveChildDirToParent
 } from '../../Fn'
+import { serviceStartSpawn } from '../../util/ServiceStart'
 import { ForkPromise } from '@shared/ForkPromise'
 import TaskQueue from '../../TaskQueue'
 import Helper from '../../Helper'
@@ -44,6 +44,30 @@ class RabbitMQ extends Base {
   init() {
     this.baseDir = join(global.Server.BaseDir!, 'rabbitmq')
     this.pidPath = join(this.baseDir, 'rabbitmq.pid')
+  }
+
+  async _resolveErlangHome() {
+    const env = await EnvSync.sync().catch(() => process.env)
+    const envHome = `${env?.ERLANG_HOME ?? env?.Erlang_Home ?? ''}`.trim()
+    if (envHome && existsSync(envHome)) {
+      return envHome
+    }
+    const appDir = global.Server.AppDir
+    if (!appDir || !existsSync(appDir)) {
+      return ''
+    }
+    try {
+      const dirs = (await readdir(appDir))
+        .filter((dir) => /^erlang-/i.test(dir))
+        .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
+      for (const dir of dirs) {
+        const erlangHome = join(appDir, dir)
+        if (existsSync(join(erlangHome, 'bin/erl.exe'))) {
+          return erlangHome
+        }
+      }
+    } catch {}
+    return ''
   }
 
   initConfig(version: SoftInstalled) {
@@ -74,21 +98,28 @@ class RabbitMQ extends Base {
         on({
           'APP-On-Log': AppLog('info', I18nT('appLog.confInit'))
         })
-        await this._initPlugin(version)
         const pluginsDir = join(version.path, 'plugins')
         const mnesiaBaseDir = join(this.baseDir, `mnesia-${v}`)
+        // Enable the management UI (port 15672) via an enabled_plugins file referenced
+        // by RABBITMQ_ENABLED_PLUGINS_FILE (sourced from the conf env file at boot).
+        // This is escript-free, unlike `rabbitmq-plugins enable`, which needs erl on
+        // PATH and a writable HOME and fails under the Helper on some setups.
+        const enabledPluginsFile = join(this.baseDir, `enabled_plugins-${v}`)
+        await writeFile(enabledPluginsFile, '[rabbitmq_management].')
         let content = ''
         if (isWindows()) {
           content = `set "NODE_IP_ADDRESS=127.0.0.1"
 set "NODENAME=rabbit@localhost"
 set "RABBITMQ_LOG_BASE=${logDir}"
 set "MNESIA_BASE=${mnesiaBaseDir}"
+set "RABBITMQ_ENABLED_PLUGINS_FILE=${enabledPluginsFile}"
 set "PLUGINS_DIR=${pluginsDir}"`
         } else {
           content = `NODE_IP_ADDRESS=127.0.0.1
 NODENAME=rabbit@localhost
 RABBITMQ_LOG_BASE=${pathFixedToUnix(logDir)}
 MNESIA_BASE=${pathFixedToUnix(mnesiaBaseDir)}
+RABBITMQ_ENABLED_PLUGINS_FILE="${pathFixedToUnix(enabledPluginsFile)}"
 PLUGINS_DIR="${pathFixedToUnix(pluginsDir)}"`
         }
         await writeFile(confFile, content)
@@ -126,25 +157,7 @@ PLUGINS_DIR="${pathFixedToUnix(pluginsDir)}"`
     if (pids && pids.length > 0) {
       return
     }
-    let str = ''
-    try {
-      await EnvSync.sync()
-      const stdout = (
-        await execPromise(
-          'Write-Host "##FlyEnv-ERLANG_HOME$($env:ERLANG_HOME)FlyEnv-ERLANG_HOME##"',
-          {
-            shell: EnvSync.PowerShellPath || 'powershell.exe'
-          }
-        )
-      ).stdout.trim()
-      const regex = /FlyEnv-ERLANG_HOME(.*?)FlyEnv-ERLANG_HOME/g
-      const match = regex.exec(stdout)
-      if (match) {
-        str = match[1] // 捕获组 (\d+) 的内容
-      }
-    } catch (e: any) {
-      console.log('get ERLANG_HOME error: ', e)
-    }
+    const str = await this._resolveErlangHome()
     console.log('ERLANG_HOME: ', str)
     if (!str || !existsSync(str)) {
       return
@@ -188,10 +201,16 @@ PLUGINS_DIR="${pathFixedToUnix(pluginsDir)}"`
       const mnesiaBaseDir = join(this.baseDir, `mnesia-${v}`)
       await mkdirp(mnesiaBaseDir)
       const checkpid = async (time = 0) => {
+        // RabbitMQ self-daemonizes through Erlang/epmd: the launcher exits once the
+        // broker is up while beam.smp keeps running. In `-detached` mode the broker
+        // writes <NODENAME>.pid (e.g. rabbit@localhost.pid) into MNESIA_BASE with its
+        // real PID — wait for it to confirm a successful start.
         const all = readdirSync(mnesiaBaseDir)
-        const pidFile = all.find((p) => p.endsWith('.pid'))
-        if (pidFile) {
-          const pid = (await readFile(join(mnesiaBaseDir, pidFile), 'utf-8')).trim()
+        const pidFileName = all.find((p) => p.endsWith('.pid'))
+        const pid = pidFileName
+          ? (await readFile(join(mnesiaBaseDir, pidFileName), 'utf-8')).trim()
+          : ''
+        if (pid) {
           on({
             'APP-On-Log': AppLog('info', I18nT('appLog.startServiceSuccess', { pid }))
           })
@@ -199,7 +218,7 @@ PLUGINS_DIR="${pathFixedToUnix(pluginsDir)}"`
             'APP-Service-Start-PID': pid
           })
         } else {
-          if (time < 20) {
+          if (time < 60) {
             await waitTime(500)
             await checkpid(time + 1)
           } else {
@@ -226,9 +245,16 @@ PLUGINS_DIR="${pathFixedToUnix(pluginsDir)}"`
 
       const bin = version.bin
       const baseDir = this.baseDir
-      const execArgs = `-detached`
       if (isWindows()) {
-        const execEnv = `set "RABBITMQ_CONF_ENV_FILE=${confFile}"`
+        const execArgs = `-detached`
+        const erlangHome = await this._resolveErlangHome()
+        const execEnv = [
+          `set "RABBITMQ_CONF_ENV_FILE=${confFile}"`,
+          erlangHome ? `set "ERLANG_HOME=${erlangHome}"` : '',
+          erlangHome ? `set "PATH=${join(erlangHome, 'bin')};%PATH%"` : ''
+        ]
+          .filter(Boolean)
+          .join('\n')
         try {
           await serviceStartExecCMD({
             version,
@@ -246,22 +272,29 @@ PLUGINS_DIR="${pathFixedToUnix(pluginsDir)}"`
           return
         }
       } else {
-        const execEnv = `export RABBITMQ_CONF_ENV_FILE="${confFile}"`
+        // RabbitMQ's Erlang/epmd architecture decouples the broker from the launcher:
+        // the `rabbitmq-server` wrapper process exits once the broker is up, while the
+        // beam.smp keeps running under epmd. serviceStartSpawn would treat that launcher
+        // exit as a startup failure, so we DON'T trust its result — checkpid() (polling
+        // the broker's .pid in mnesiaBaseDir) is the source of truth. We pass `-detached`
+        // so the broker fully self-daemonizes; no start script is landed to disk.
+        const execEnv: Record<string, string> = {
+          RABBITMQ_CONF_ENV_FILE: confFile
+        }
         try {
-          await serviceStartExec({
+          await serviceStartSpawn({
             version,
             pidPath: this.pidPath,
             baseDir,
             bin,
-            execArgs,
+            execArgs: ['-detached'],
             execEnv,
             on,
-            checkPidFile: false
+            waitTime: 1000
           })
-        } catch (e: any) {
-          console.log('-k start err: ', e)
-          reject(e)
-          return
+        } catch {
+          // Expected: the detached launcher exits immediately. The broker keeps booting;
+          // checkpid() below confirms it actually came up (or times out → real failure).
         }
       }
       await checkpid()
@@ -358,7 +391,6 @@ PLUGINS_DIR="${pathFixedToUnix(pluginsDir)}"`
             })
             return Promise.all(all)
           }
-          return Promise.resolve([])
         })
         .then((list) => {
           list.forEach((v, i) => {
