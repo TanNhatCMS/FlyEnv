@@ -28,10 +28,20 @@ class Mcp extends Base {
   private transports: Map<string, any> = new Map()
   private port = 3847
   private token = ''
+  private bind = '127.0.0.1'
+  private ipcCommandKey = 'App_MCP_Log'
 
   constructor() {
     super()
     this.type = 'mcp'
+  }
+
+  private sendLog(info: { time: string; level: string; message: string }) {
+    process?.send?.({
+      on: true,
+      key: this.ipcCommandKey,
+      info
+    })
   }
 
   init() {
@@ -288,11 +298,13 @@ class Mcp extends Base {
         })
         const defaultConfig = {
           port: 3847,
-          token: randomUUID()
+          token: randomUUID(),
+          bind: '127.0.0.1'
         }
         await writeFile(configFile, JSON.stringify(defaultConfig, null, 2))
         this.port = defaultConfig.port
         this.token = defaultConfig.token
+        this.bind = defaultConfig.bind
         on({
           'APP-On-Log': AppLog('info', I18nT('appLog.confInitSuccess', { file: configFile }))
         })
@@ -301,6 +313,7 @@ class Mcp extends Base {
         const config = JSON.parse(content)
         this.port = config.port || 3847
         this.token = config.token || randomUUID()
+        this.bind = config.bind || '127.0.0.1'
       }
       resolve(configFile)
     })
@@ -317,10 +330,16 @@ class Mcp extends Base {
       const baseDir = join(global.Server.BaseDir!, 'mcp')
       await mkdirp(baseDir)
 
+      const logFile = join(baseDir, 'mcp-start-out.log')
+      const errorLogFile = join(baseDir, 'mcp-start-error.log')
+
+      await writeFile(logFile, `[${new Date().toISOString()}] MCP Server starting...\n`)
+
       this.mcpServer = await this.createMcpServer()
 
       this.server = http.createServer(async (req, res) => {
         const url = new URL(req.url || '/', `http://${req.headers.host}`)
+        const clientIp = req.socket.remoteAddress || 'unknown'
 
         if (url.pathname === '/health') {
           res.writeHead(200, { 'Content-Type': 'application/json' })
@@ -329,6 +348,11 @@ class Mcp extends Base {
         }
 
         if (url.pathname === '/mcp') {
+          this.sendLog({
+            time: new Date().toISOString(),
+            level: 'info',
+            message: `Connection from ${clientIp}`
+          })
           try {
             const transport = new StreamableHTTPServerTransport({
               sessionIdGenerator: () => randomUUID()
@@ -339,11 +363,24 @@ class Mcp extends Base {
               this.transports.set(sessionId, transport)
             }
 
+            this.sendLog({
+              time: new Date().toISOString(),
+              level: 'info',
+              message: `Session ${sessionId.slice(0, 8)}... from ${clientIp}`
+            })
+
             await this.mcpServer.connect(transport)
 
             await transport.handleRequest(req, res)
           } catch (error: any) {
             console.error('MCP handle error:', error)
+            this.sendLog({
+              time: new Date().toISOString(),
+              level: 'error',
+              message: `Error from ${clientIp}: ${error.message}`
+            })
+            const errMsg = `[${new Date().toISOString()}] ERROR: ${error.message}\n`
+            await writeFile(errorLogFile, errMsg).catch(() => {})
             if (!res.headersSent) {
               res.writeHead(500, { 'Content-Type': 'application/json' })
               res.end(JSON.stringify({ error: error.message }))
@@ -356,8 +393,15 @@ class Mcp extends Base {
         res.end('Not Found')
       })
 
-      this.server.listen(this.port, '127.0.0.1', () => {
-        console.error(`MCP Server listening on http://127.0.0.1:${this.port}/mcp`)
+      this.server.listen(this.port, this.bind, async () => {
+        const startMsg = `[${new Date().toISOString()}] MCP Server listening on ${this.bind}:${this.port}/mcp\n`
+        await writeFile(logFile, startMsg).catch(() => {})
+        this.sendLog({
+          time: new Date().toISOString(),
+          level: 'info',
+          message: `Server listening on ${this.bind}:${this.port}`
+        })
+        console.error(`MCP Server listening on http://${this.bind}:${this.port}/mcp`)
         on({
           'APP-On-Log': AppLog('info', `MCP Server started on port ${this.port}`)
         })
@@ -376,7 +420,9 @@ class Mcp extends Base {
         })
       })
 
-      this.server.on('error', (err: any) => {
+      this.server.on('error', async (err: any) => {
+        const errMsg = `[${new Date().toISOString()}] FATAL: ${err.message}\n`
+        await writeFile(errorLogFile, errMsg).catch(() => {})
         console.error('MCP Server error:', err)
         reject(err)
       })
@@ -404,6 +450,9 @@ class Mcp extends Base {
       }
 
       if (this.server) {
+        const logFile = join(global.Server.BaseDir!, 'mcp/mcp-start-out.log')
+        const stopMsg = `[${new Date().toISOString()}] MCP Server stopped\n`
+        await writeFile(logFile, stopMsg).catch(() => {})
         this.server.close(() => {
           this.server = null
           on({
@@ -419,30 +468,41 @@ class Mcp extends Base {
 
   getPort() {
     return new ForkPromise(async (resolve) => {
+      await this.initConfig()
       resolve(this.port)
     })
   }
 
   getToken() {
     return new ForkPromise(async (resolve) => {
+      await this.initConfig()
       resolve(this.token)
     })
   }
 
-  updateConfig(config: { port?: number; token?: string }) {
+  getBind() {
+    return new ForkPromise(async (resolve) => {
+      await this.initConfig()
+      resolve(this.bind)
+    })
+  }
+
+  updateConfig(config: { port?: number; token?: string; bind?: string }) {
     return new ForkPromise(async (resolve, reject, on) => {
       const baseDir = join(global.Server.BaseDir!, 'mcp')
       const configFile = join(baseDir, 'config.json')
 
       if (config.port) this.port = config.port
       if (config.token) this.token = config.token
+      if (config.bind) this.bind = config.bind
 
       await writeFile(
         configFile,
         JSON.stringify(
           {
             port: this.port,
-            token: this.token
+            token: this.token,
+            bind: this.bind
           },
           null,
           2
@@ -455,6 +515,14 @@ class Mcp extends Base {
 
       resolve(true)
     })
+  }
+
+  startService() {
+    return this._startServer(null)
+  }
+
+  stopService() {
+    return this._stopServer()
   }
 }
 

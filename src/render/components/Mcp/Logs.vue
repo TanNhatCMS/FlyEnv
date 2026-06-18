@@ -22,22 +22,12 @@
   import LogVM from '@/components/Log/index.vue'
   import ToolVM from '@/components/Log/tool.vue'
   import { join } from '@/util/path-browserify'
-  import { BrewStore } from '@/store/brew'
   import { I18nT } from '@lang/index'
 
   const log = ref()
-  const brewStore = BrewStore()
   const logType = ref<'out' | 'error'>('out')
 
-  const currentVersion = computed(() => {
-    return brewStore.currentVersion('mcp')
-  })
-
   const filepath = computed(() => {
-    if (!currentVersion?.value?.version) {
-      return ''
-    }
-    const versionStr = currentVersion.value.version.trim().split(' ').join('')
-    return join(window.Server.BaseDir!, `mcp/mcp-${versionStr}-start-${logType.value}.log`)
+    return join(window.Server.BaseDir!, `mcp/mcp-start-${logType.value}.log`)
   })
 </script>

@@ -50,7 +50,7 @@
   import { ref, computed } from 'vue'
   import IPC from '@/util/IPC'
   import { MessageSuccess } from '@/util/Element'
-  import { randomUUID } from 'crypto'
+  const randomUUID = () => crypto.randomUUID()
 
   const showToken = ref(false)
 
@@ -63,14 +63,16 @@
   const messagesUrl = computed(() => `http://127.0.0.1:${config.value.port}/messages`)
 
   const loadConfig = () => {
-    IPC.send('app-fork:mcp', 'getToken').then((key: string, token: string) => {
+    IPC.send('app-fork:mcp', 'getToken').then((key: string, res: any) => {
       IPC.off(key)
+      const token = res?.data
       if (token) {
         config.value.token = token
       }
     })
-    IPC.send('app-fork:mcp', 'getPort').then((key: string, port: number) => {
+    IPC.send('app-fork:mcp', 'getPort').then((key: string, res: any) => {
       IPC.off(key)
+      const port = res?.data
       if (port) {
         config.value.port = port
       }
