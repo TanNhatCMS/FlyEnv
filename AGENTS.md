@@ -104,12 +104,13 @@ On Windows, native dependencies (node-pty, etc.) require extra setup before `yar
 npm install -g yarn node-gyp
 python -m pip install --upgrade pip
 
-# 2. Set WinRT link flag (required for node-pty, better-sqlite3, etc.)
-$env:LINK = "runtimeobject.lib"
-
-# 3. Now install
-yarn install
+# 2. Now install (auto-sets LINK=runtimeobject.lib via cross-env)
+yarn install:win
 ```
+
+**Without `$env:LINK = "runtimeobject.lib"`**, native addons will fail to compile with errors like `unresolved external symbol __imp_RoInitialize`.
+
+**Registry**: Project uses `.yarnrc` to lock registry to `https://registry.yarnpkg.com`.
 
 **Without `$env:LINK = "runtimeobject.lib"`**, native addons will fail to compile with errors like `unresolved external symbol __imp_RoInitialize`.
 
