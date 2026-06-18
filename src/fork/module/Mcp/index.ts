@@ -7,21 +7,25 @@ import { ForkPromise } from '@shared/ForkPromise'
 import { AppLog, readFile, writeFile, mkdirp } from '../../Fn'
 import { I18nT } from '@lang/index'
 
-interface McpTool {
-  name: string
-  description: string
-  inputSchema: Record<string, any>
-}
+let McpServer: any
+let StreamableHTTPServerTransport: any
+let z: any
 
-interface McpClient {
-  id: string
-  res: http.ServerResponse
-  lastEventId: number
+async function loadSdk() {
+  if (!McpServer) {
+    const mcpModule = await import('@modelcontextprotocol/sdk/server/mcp.js')
+    McpServer = mcpModule.McpServer
+    const transportModule = await import('@modelcontextprotocol/sdk/server/streamableHttp.js')
+    StreamableHTTPServerTransport = transportModule.StreamableHTTPServerTransport
+    const zodModule = await import('zod')
+    z = zodModule.z ?? zodModule.default ?? zodModule
+  }
 }
 
 class Mcp extends Base {
   private server: http.Server | null = null
-  private clients: Map<string, McpClient> = new Map()
+  private mcpServer: any = null
+  private transports: Map<string, any> = new Map()
   private port = 3847
   private token = ''
 
@@ -34,120 +38,20 @@ class Mcp extends Base {
     this.pidPath = join(global.Server.BaseDir!, 'mcp/mcp.pid')
   }
 
-  private getTools(): McpTool[] {
-    return [
-      {
-        name: 'flyenv_list_services',
-        description: 'List all available FlyEnv services and their current status',
-        inputSchema: {
-          type: 'object',
-          properties: {},
-          required: []
-        }
-      },
-      {
-        name: 'flyenv_start_service',
-        description: 'Start a FlyEnv service (e.g., nginx, mysql, php, redis)',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            service: {
-              type: 'string',
-              description: 'Service name (e.g., nginx, mysql, php, redis, mongodb)'
-            }
-          },
-          required: ['service']
-        }
-      },
-      {
-        name: 'flyenv_stop_service',
-        description: 'Stop a running FlyEnv service',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            service: {
-              type: 'string',
-              description: 'Service name to stop'
-            }
-          },
-          required: ['service']
-        }
-      },
-      {
-        name: 'flyenv_get_service_status',
-        description: 'Get detailed status of a specific service',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            service: {
-              type: 'string',
-              description: 'Service name'
-            }
-          },
-          required: ['service']
-        }
-      },
-      {
-        name: 'flyenv_list_versions',
-        description: 'List installed versions for a service',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            service: {
-              type: 'string',
-              description: 'Service name'
-            }
-          },
-          required: ['service']
-        }
-      },
-      {
-        name: 'flyenv_get_config',
-        description: 'Get configuration file path for a service',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            service: {
-              type: 'string',
-              description: 'Service name'
-            }
-          },
-          required: ['service']
-        }
-      },
-      {
-        name: 'flyenv_get_logs',
-        description: 'Get recent log entries for a service',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            service: {
-              type: 'string',
-              description: 'Service name'
-            },
-            lines: {
-              type: 'number',
-              description: 'Number of lines to retrieve (default: 100)'
-            }
-          },
-          required: ['service']
-        }
-      },
-      {
-        name: 'flyenv_get_system_info',
-        description: 'Get FlyEnv system information',
-        inputSchema: {
-          type: 'object',
-          properties: {},
-          required: []
-        }
-      }
-    ]
-  }
+  private async createMcpServer() {
+    await loadSdk()
 
-  private async handleToolCall(name: string, args: Record<string, any>): Promise<any> {
-    switch (name) {
-      case 'flyenv_list_services': {
+    const server = new McpServer({
+      name: 'flyenv-mcp-server',
+      version: '1.0.0'
+    })
+
+    server.registerTool(
+      'flyenv_list_services',
+      {
+        description: 'List all available FlyEnv services and their current status'
+      },
+      async () => {
         const services = [
           'nginx',
           'apache',
@@ -169,65 +73,193 @@ class Mcp extends Base {
           'ollama'
         ]
         return {
-          services: services.map((s) => ({
-            name: s,
-            type: this.getServiceType(s)
-          }))
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  services: services.map((s) => ({
+                    name: s,
+                    type: this.getServiceType(s)
+                  }))
+                },
+                null,
+                2
+              )
+            }
+          ]
         }
       }
-      case 'flyenv_start_service': {
-        return { message: `Service ${args.service} start command sent` }
-      }
-      case 'flyenv_stop_service': {
-        return { message: `Service ${args.service} stop command sent` }
-      }
-      case 'flyenv_get_service_status': {
+    )
+
+    server.registerTool(
+      'flyenv_start_service',
+      {
+        description: 'Start a FlyEnv service (e.g., nginx, mysql, php, redis)',
+        inputSchema: {
+          service: z.string().describe('Service name to start')
+        }
+      },
+      async ({ service }: { service: string }) => {
         return {
-          service: args.service,
-          status: 'unknown',
-          message: 'Use FlyEnv UI to check actual status'
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ message: `Service ${service} start command sent` })
+            }
+          ]
         }
       }
-      case 'flyenv_list_versions': {
+    )
+
+    server.registerTool(
+      'flyenv_stop_service',
+      {
+        description: 'Stop a running FlyEnv service',
+        inputSchema: {
+          service: z.string().describe('Service name to stop')
+        }
+      },
+      async ({ service }: { service: string }) => {
         return {
-          service: args.service,
-          versions: [],
-          message: 'Use FlyEnv version manager to check installed versions'
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ message: `Service ${service} stop command sent` })
+            }
+          ]
         }
       }
-      case 'flyenv_get_config': {
-        const configPath = join(global.Server.BaseDir!, args.service, `${args.service}.conf`)
+    )
+
+    server.registerTool(
+      'flyenv_get_service_status',
+      {
+        description: 'Get detailed status of a specific service',
+        inputSchema: {
+          service: z.string().describe('Service name')
+        }
+      },
+      async ({ service }: { service: string }) => {
         return {
-          service: args.service,
-          configPath,
-          exists: existsSync(configPath)
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                service,
+                status: 'unknown',
+                message: 'Use FlyEnv UI to check actual status'
+              })
+            }
+          ]
         }
       }
-      case 'flyenv_get_logs': {
+    )
+
+    server.registerTool(
+      'flyenv_list_versions',
+      {
+        description: 'List installed versions for a service',
+        inputSchema: {
+          service: z.string().describe('Service name')
+        }
+      },
+      async ({ service }: { service: string }) => {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                service,
+                versions: [],
+                message: 'Use FlyEnv version manager to check installed versions'
+              })
+            }
+          ]
+        }
+      }
+    )
+
+    server.registerTool(
+      'flyenv_get_config',
+      {
+        description: 'Get configuration file path for a service',
+        inputSchema: {
+          service: z.string().describe('Service name')
+        }
+      },
+      async ({ service }: { service: string }) => {
+        const configPath = join(global.Server.BaseDir!, service, `${service}.conf`)
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                service,
+                configPath,
+                exists: existsSync(configPath)
+              })
+            }
+          ]
+        }
+      }
+    )
+
+    server.registerTool(
+      'flyenv_get_logs',
+      {
+        description: 'Get recent log entries for a service',
+        inputSchema: {
+          service: z.string().describe('Service name'),
+          lines: z.number().optional().describe('Number of lines (default: 100)')
+        }
+      },
+      async ({ service, lines }: { service: string; lines?: number }) => {
         const logPath = join(
           global.Server.BaseDir!,
-          args.service,
-          `${args.service}-start-out.log`
+          service,
+          `${service}-start-out.log`
         )
         return {
-          service: args.service,
-          logPath,
-          exists: existsSync(logPath),
-          message: 'Log file path returned'
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                service,
+                logPath,
+                exists: existsSync(logPath),
+                lines: lines ?? 100
+              })
+            }
+          ]
         }
       }
-      case 'flyenv_get_system_info': {
+    )
+
+    server.registerTool(
+      'flyenv_get_system_info',
+      {
+        description: 'Get FlyEnv system information'
+      },
+      async () => {
         return {
-          platform: process.platform,
-          arch: process.arch,
-          nodeVersion: process.version,
-          baseDir: global.Server.BaseDir,
-          appDir: global.Server.AppDir
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                platform: process.platform,
+                arch: process.arch,
+                nodeVersion: process.version,
+                baseDir: global.Server.BaseDir,
+                appDir: global.Server.AppDir
+              })
+            }
+          ]
         }
       }
-      default:
-        throw new Error(`Unknown tool: ${name}`)
-    }
+    )
+
+    return server
   }
 
   private getServiceType(service: string): string {
@@ -243,14 +275,6 @@ class Mcp extends Base {
     return 'other'
   }
 
-  private sendSSE(res: http.ServerResponse, event: string, data: any, id?: number) {
-    if (res.destroyed) return
-    const eventId = id ?? Date.now()
-    res.write(`id: ${eventId}\n`)
-    res.write(`event: ${event}\n`)
-    res.write(`data: ${JSON.stringify(data)}\n\n`)
-  }
-
   initConfig(): ForkPromise<string> {
     return new ForkPromise(async (resolve, reject, on) => {
       const baseDir = join(global.Server.BaseDir!, 'mcp')
@@ -264,8 +288,7 @@ class Mcp extends Base {
         })
         const defaultConfig = {
           port: 3847,
-          token: randomUUID(),
-          allowedOrigins: ['*']
+          token: randomUUID()
         }
         await writeFile(configFile, JSON.stringify(defaultConfig, null, 2))
         this.port = defaultConfig.port
@@ -294,21 +317,10 @@ class Mcp extends Base {
       const baseDir = join(global.Server.BaseDir!, 'mcp')
       await mkdirp(baseDir)
 
+      this.mcpServer = await this.createMcpServer()
+
       this.server = http.createServer(async (req, res) => {
         const url = new URL(req.url || '/', `http://${req.headers.host}`)
-
-        res.setHeader('Access-Control-Allow-Origin', '*')
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        res.setHeader(
-          'Access-Control-Allow-Headers',
-          'Content-Type, Authorization, Last-Event-ID'
-        )
-
-        if (req.method === 'OPTIONS') {
-          res.writeHead(200)
-          res.end()
-          return
-        }
 
         if (url.pathname === '/health') {
           res.writeHead(200, { 'Content-Type': 'application/json' })
@@ -316,142 +328,27 @@ class Mcp extends Base {
           return
         }
 
-        if (url.pathname === '/sse' && req.method === 'GET') {
-          const clientId = randomUUID()
-          res.writeHead(200, {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            Connection: 'keep-alive'
-          })
+        if (url.pathname === '/mcp') {
+          try {
+            const transport = new StreamableHTTPServerTransport({
+              sessionIdGenerator: () => randomUUID()
+            })
 
-          this.clients.set(clientId, {
-            id: clientId,
-            res,
-            lastEventId: 0
-          })
-
-          this.sendSSE(res, 'endpoint', {
-            url: `/messages?clientId=${clientId}`
-          })
-
-          req.on('close', () => {
-            this.clients.delete(clientId)
-          })
-
-          return
-        }
-
-        if (url.pathname === '/messages' && req.method === 'POST') {
-          const clientId = url.searchParams.get('clientId')
-          const client = clientId ? this.clients.get(clientId) : null
-
-          let body = ''
-          req.on('data', (chunk) => {
-            body += chunk
-          })
-
-          req.on('end', async () => {
-            try {
-              const message = JSON.parse(body)
-
-              let response: any = null
-
-              switch (message.method) {
-                case 'initialize':
-                  response = {
-                    protocolVersion: '2024-11-05',
-                    capabilities: {
-                      tools: {}
-                    },
-                    serverInfo: {
-                      name: 'flyenv-mcp-server',
-                      version: '1.0.0'
-                    }
-                  }
-                  break
-
-                case 'notifications/initialized':
-                  res.writeHead(200)
-                  res.end()
-                  return
-
-                case 'tools/list':
-                  response = {
-                    tools: this.getTools()
-                  }
-                  break
-
-                case 'tools/call': {
-                  const { name, arguments: args } = message.params
-                  try {
-                    const result = await this.handleToolCall(name, args || {})
-                    response = {
-                      content: [
-                        {
-                          type: 'text',
-                          text: JSON.stringify(result, null, 2)
-                        }
-                      ]
-                    }
-                  } catch (error: any) {
-                    response = {
-                      content: [
-                        {
-                          type: 'text',
-                          text: `Error: ${error.message}`
-                        }
-                      ],
-                      isError: true
-                    }
-                  }
-                  break
-                }
-
-                default:
-                  res.writeHead(400, { 'Content-Type': 'application/json' })
-                  res.end(
-                    JSON.stringify({
-                      jsonrpc: '2.0',
-                      error: { code: -32601, message: `Method not found: ${message.method}` },
-                      id: message.id
-                    })
-                  )
-                  return
-              }
-
-              if (client) {
-                this.sendSSE(
-                  client.res,
-                  'message',
-                  {
-                    jsonrpc: '2.0',
-                    result: response,
-                    id: message.id
-                  },
-                  ++client.lastEventId
-                )
-              }
-
-              res.writeHead(200, { 'Content-Type': 'application/json' })
-              res.end(
-                JSON.stringify({
-                  jsonrpc: '2.0',
-                  result: response,
-                  id: message.id
-                })
-              )
-            } catch (error: any) {
-              res.writeHead(500, { 'Content-Type': 'application/json' })
-              res.end(
-                JSON.stringify({
-                  jsonrpc: '2.0',
-                  error: { code: -32603, message: error.message },
-                  id: null
-                })
-              )
+            const sessionId = transport.sessionId
+            if (sessionId) {
+              this.transports.set(sessionId, transport)
             }
-          })
 
+            await this.mcpServer.connect(transport)
+
+            await transport.handleRequest(req, res)
+          } catch (error: any) {
+            console.error('MCP handle error:', error)
+            if (!res.headersSent) {
+              res.writeHead(500, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ error: error.message }))
+            }
+          }
           return
         }
 
@@ -460,8 +357,7 @@ class Mcp extends Base {
       })
 
       this.server.listen(this.port, '127.0.0.1', () => {
-        console.error(`MCP Server listening on http://127.0.0.1:${this.port}`)
-        console.error(`SSE endpoint: http://127.0.0.1:${this.port}/sse`)
+        console.error(`MCP Server listening on http://127.0.0.1:${this.port}/mcp`)
         on({
           'APP-On-Log': AppLog('info', `MCP Server started on port ${this.port}`)
         })
@@ -493,10 +389,19 @@ class Mcp extends Base {
         'APP-On-Log': AppLog('info', I18nT('appLog.stopServiceBegin', { service: 'mcp-server' }))
       })
 
-      for (const [, client] of this.clients) {
-        client.res.end()
+      for (const [, transport] of this.transports) {
+        try {
+          await transport.close()
+        } catch {}
       }
-      this.clients.clear()
+      this.transports.clear()
+
+      if (this.mcpServer) {
+        try {
+          await this.mcpServer.close()
+        } catch {}
+        this.mcpServer = null
+      }
 
       if (this.server) {
         this.server.close(() => {
