@@ -95,6 +95,26 @@ When adding/removing Go helper methods:
 3. Wire Go dispatch in `src/helper-go/main.go`
 4. Run `yarn test:helper:contract` until it passes
 
+## Windows Build Environment
+
+On Windows, native dependencies (node-pty, etc.) require extra setup before `yarn install`:
+
+```powershell
+# 1. Install build tools
+npm install -g yarn node-gyp
+python -m pip install --upgrade pip
+
+# 2. Set WinRT link flag (required for node-pty, better-sqlite3, etc.)
+$env:LINK = "runtimeobject.lib"
+
+# 3. Now install
+yarn install
+```
+
+**Without `$env:LINK = "runtimeobject.lib"`**, native addons will fail to compile with errors like `unresolved external symbol __imp_RoInitialize`.
+
+See `.github/workflows/windows-version-build.yml` for the full CI process.
+
 ## Gotchas
 
 - **node-pty builds**: Run `yarn clean` if native builds fail
