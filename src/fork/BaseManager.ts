@@ -72,6 +72,7 @@ class BaseManager {
   Git: any
   Cron: any
   DotNet: any
+  Mcp: any
 
   modules: Set<string> = new Set()
 
@@ -569,6 +570,12 @@ class BaseManager {
         this.DotNet = res.default
       }
       doRun(this.DotNet)
+    } else if (module === 'mcp') {
+      if (!this.Mcp) {
+        const res = await import('./module/Mcp')
+        this.Mcp = res.default
+      }
+      doRun(this.Mcp)
     } else {
       ProcessSendError(ipcCommandKey, 'No Found Module')
     }
