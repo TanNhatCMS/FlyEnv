@@ -22,9 +22,6 @@ env:
   GO_VERSION: "stable"
   YARN_VERSION: "1.22.22"
   NODE_OPTIONS: "--max-old-space-size=4096"
-
-  # 默认构建未签名包。
-  # 如果以后你要签名 macOS / Windows，再单独配置证书 secrets。
   CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
 jobs:
@@ -115,17 +112,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: yarn
-          cache-dependency-path: yarn.lock
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: true
-          cache-dependency-path: |
-            src/helper-go/go.mod
-            src/helper-go/go.sum
+          cache: false
 
       - name: Install Yarn and node-gyp
         run: |
@@ -135,25 +127,18 @@ jobs:
           yarn --version
           go version
 
-      - name: Cache native build folders
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/node-gyp
-            ~/.node-gyp
-            ~/Library/Caches/node-gyp
-            C:\Users\runneradmin\AppData\Local\node-gyp
-          key: native-${{ matrix.name }}-${{ hashFiles('yarn.lock') }}
-          restore-keys: |
-            native-${{ matrix.name }}-
-
       - name: Install project dependencies
         run: |
           if [[ "${RUNNER_OS}" == "Windows" ]]; then
             export LINK=runtimeobject.lib
           fi
 
-          yarn install --frozen-lockfile --network-timeout 600000
+          if [[ -f yarn.lock ]]; then
+            yarn install --frozen-lockfile --network-timeout 600000
+          else
+            echo "yarn.lock not found, installing without frozen lockfile."
+            yarn install --network-timeout 600000
+          fi
 
       - name: Build Go helper - Linux
         if: matrix.platform == 'linux'
@@ -181,7 +166,8 @@ jobs:
       - name: Verify Go helper binaries
         run: |
           echo "Helper dist files:"
-          find src/helper-go/dist -maxdepth 2 -type f -print || true
+          test -d src/helper-go/dist
+          find src/helper-go/dist -maxdepth 2 -type f -print
 
       - name: Fix macOS quarantine attributes
         if: matrix.platform == 'macos'
