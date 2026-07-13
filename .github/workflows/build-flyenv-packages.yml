@@ -1,1 +1,251 @@
+name: Build FlyEnv Packages
 
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: flyenv-packages-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CI: "true"
+  NODE_VERSION: "24"
+  GO_VERSION: "stable"
+  YARN_VERSION: "1.22.22"
+  NODE_OPTIONS: "--max-old-space-size=4096"
+
+  # 默认构建未签名包。
+  # 如果以后你要签名 macOS / Windows，再单独配置证书 secrets。
+  CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runs_on }}
+    timeout-minutes: 120
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x64
+            platform: linux
+            runs_on: ubuntu-22.04
+            target_arch: x64
+
+          - name: linux-arm64
+            platform: linux
+            runs_on: ubuntu-22.04-arm
+            target_arch: arm64
+
+          - name: macos-x64
+            platform: macos
+            runs_on: macos-15-intel
+            target_arch: x64
+
+          - name: macos-arm64
+            platform: macos
+            runs_on: macos-15
+            target_arch: arm64
+
+          - name: windows-x64
+            platform: windows
+            runs_on: windows-2022
+            target_arch: x64
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Safety check repository
+        run: |
+          echo "Current repository: ${GITHUB_REPOSITORY}"
+
+          if [[ "${GITHUB_REPOSITORY}" == "xpf0000/FlyEnv" ]]; then
+            echo "This workflow must not run on the upstream/original repository."
+            exit 1
+          fi
+
+      - name: Checkout current fork repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Print build environment
+        run: |
+          echo "Repository: ${GITHUB_REPOSITORY}"
+          echo "Ref: ${GITHUB_REF}"
+          echo "SHA: ${GITHUB_SHA}"
+          echo "Runner OS: ${RUNNER_OS}"
+          echo "Runner ARCH: ${RUNNER_ARCH}"
+          echo "Matrix platform: ${{ matrix.platform }}"
+          echo "Matrix arch: ${{ matrix.target_arch }}"
+          uname -a || true
+
+      - name: Install Linux build dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            g++ \
+            make \
+            python3 \
+            python3-pip \
+            pkg-config \
+            fakeroot \
+            rpm \
+            libopenjp2-tools
+
+      - name: Install Windows build dependencies
+        if: matrix.platform == 'windows'
+        run: |
+          choco install -y make
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: |
+            src/helper-go/go.mod
+            src/helper-go/go.sum
+
+      - name: Install Yarn and node-gyp
+        run: |
+          npm install -g yarn@${YARN_VERSION} node-gyp
+          node --version
+          npm --version
+          yarn --version
+          go version
+
+      - name: Cache native build folders
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/node-gyp
+            ~/.node-gyp
+            ~/Library/Caches/node-gyp
+            C:\Users\runneradmin\AppData\Local\node-gyp
+          key: native-${{ matrix.name }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            native-${{ matrix.name }}-
+
+      - name: Install project dependencies
+        run: |
+          if [[ "${RUNNER_OS}" == "Windows" ]]; then
+            export LINK=runtimeobject.lib
+          fi
+
+          yarn install --frozen-lockfile --network-timeout 600000
+
+      - name: Build Go helper - Linux
+        if: matrix.platform == 'linux'
+        run: |
+          cd src/helper-go
+          chmod +x ./build-os.sh
+          bash ./build-os.sh
+
+      - name: Build Go helper - macOS
+        if: matrix.platform == 'macos'
+        run: |
+          cd src/helper-go
+          chmod +x ./build.sh
+          bash ./build.sh
+
+      - name: Build Go helper - Windows
+        if: matrix.platform == 'windows'
+        run: |
+          cd src/helper-go
+          go clean -modcache
+          go mod download
+          go mod tidy
+          pwsh -NoProfile -ExecutionPolicy Bypass -File ./build-win.ps1
+
+      - name: Verify Go helper binaries
+        run: |
+          echo "Helper dist files:"
+          find src/helper-go/dist -maxdepth 2 -type f -print || true
+
+      - name: Fix macOS quarantine attributes
+        if: matrix.platform == 'macos'
+        run: |
+          xattr -dr com.apple.quarantine src/helper-go/dist || true
+          find src/helper-go/dist -type f -exec chmod 755 {} \; || true
+
+      - name: Build FlyEnv package
+        run: |
+          yarn run build
+
+      - name: List release files
+        if: always()
+        run: |
+          echo "Release files:"
+          find release -maxdepth 3 -type f -print || true
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: FlyEnv-${{ matrix.name }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            release/*.exe
+            release/*.msi
+            release/*.dmg
+            release/*.zip
+            release/*.deb
+            release/*.rpm
+            release/latest*.yml
+            release/*.blockmap
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List downloaded artifacts
+        run: |
+          find artifacts -type f -print
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          set -e
+
+          if gh release view "${TAG_NAME}" >/dev/null 2>&1; then
+            echo "Release ${TAG_NAME} exists. Uploading artifacts..."
+            gh release upload "${TAG_NAME}" artifacts/* --clobber
+          else
+            echo "Creating release ${TAG_NAME}..."
+            gh release create "${TAG_NAME}" artifacts/* \
+              --title "${TAG_NAME}" \
+              --generate-notes
+          fi
